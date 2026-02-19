@@ -7,7 +7,7 @@
 Maintain the wave frequency while decoding encrypted hex sequences to survive the void.
 
 ## 🕹️ Live Demo
-**[PLAY NOW IN YOUR BROWSER](https://github.com/AstroSalvo/voidlink-oblivion_station/)**
+**[PLAY NOW IN YOUR BROWSER](https://astrosalvo.itch.io/voidlink-oblivion-station)**
 
 ## 🇮🇹 ISTRUZIONI OPERATIVE (Italiano)
 
