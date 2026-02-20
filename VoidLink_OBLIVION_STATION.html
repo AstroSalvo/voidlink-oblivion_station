@@ -338,41 +338,113 @@ window.addEventListener('keydown', e => {
 });
 
 // --- VECCHIA CARD ESTETICA ADATTATA ---
+
 function genInstaCard() {
+
     const iCanvas = document.getElementById('instaCanvas');
+
     const iCtx = iCanvas.getContext('2d');
+
+    
+
+    // Background con gradiente
+
     const grad = iCtx.createRadialGradient(540, 960, 100, 540, 960, 1200);
+
     grad.addColorStop(0, '#1a1a1a'); grad.addColorStop(1, '#050505');
+
     iCtx.fillStyle = grad; iCtx.fillRect(0, 0, 1080, 1920);
-    iCtx.strokeStyle = 'rgba(0, 255, 65, 0.05)';
+
+    
+
+    // Linee curve decorative
+
+    iCtx.strokeStyle = 'rgba(227, 218, 201, 0.03)';
+
     for(let i=0; i<1080; i+=60) {
+
         iCtx.beginPath(); iCtx.moveTo(i, 0);
+
         iCtx.bezierCurveTo(i+50, 600, i-50, 1200, i, 1920); iCtx.stroke();
+
     }
-    iCtx.strokeStyle = '#00FF41'; iCtx.lineWidth = 2; iCtx.strokeRect(50, 50, 980, 1820);
-    iCtx.fillStyle = '#00FF41'; iCtx.font = 'bold 90px Arial'; iCtx.fillText('VOIDLINK', 100, 200);
+
+    
+
+    // Bordo
+
+    iCtx.strokeStyle = '#808080'; iCtx.lineWidth = 2; iCtx.strokeRect(50, 50, 980, 1820);
+
+    
+
+    // Titoli
+
+    iCtx.fillStyle = '#E3DAC9'; iCtx.font = 'bold 90px Arial'; iCtx.fillText('VOIDLINK', 100, 200);
+
     iCtx.fillStyle = '#00FF41'; iCtx.font = '22px Courier New'; iCtx.fillText('STABILITY TEST // OBLIVION PROTOCOL // 2026', 100, 250);
-    iCtx.fillStyle = 'rgba(0, 255, 65, 0.02)'; iCtx.fillRect(100, 380, 880, 550);
-    iCtx.strokeStyle = 'rgba(0, 255, 65, 0.2)'; iCtx.strokeRect(100, 380, 880, 550);
+
+    
+
+    // Box Tempo
+
+    iCtx.fillStyle = 'rgba(255, 255, 255, 0.02)'; iCtx.fillRect(100, 380, 880, 550);
+
+    iCtx.strokeStyle = 'rgba(227, 218, 201, 0.1)'; iCtx.strokeRect(100, 380, 880, 550);
+
     iCtx.fillStyle = '#808080'; iCtx.font = 'bold 35px Arial'; iCtx.fillText('CORE_UPTIME', 150, 470);
-    iCtx.fillStyle = '#00FF41'; iCtx.font = '900 280px Arial';
+
+    
+
+    iCtx.fillStyle = '#FFF'; iCtx.font = '900 280px Arial';
+
     const sVal = time.toFixed(1); iCtx.fillText(sVal, 150, 780);
+
     const offX = iCtx.measureText(sVal).width;
+
     iCtx.font = '100px Arial'; iCtx.fillText('s', 160 + offX, 780);
+
+    
+
+    // Dati Sessione
+
     const drawData = (l, v, y) => {
-        iCtx.fillStyle = 'rgba(0, 255, 65, 0.5)'; iCtx.font = '20px Courier New'; iCtx.fillText(l, 100, y);
-        iCtx.fillStyle = '#00FF41'; iCtx.font = 'bold 50px Arial'; iCtx.fillText(v, 100, y + 60);
+
+        iCtx.fillStyle = 'rgba(227, 218, 201, 0.5)'; iCtx.font = '20px Courier New'; iCtx.fillText(l, 100, y);
+
+        iCtx.fillStyle = '#E3DAC9'; iCtx.font = 'bold 50px Arial'; iCtx.fillText(v, 100, y + 60);
+
     };
+
     drawData('PILOTS', playerName.toUpperCase(), 1050);
+
     drawData('BOSS_CLEARED', bossCleared.toString().padStart(3, '0'), 1250);
+
     drawData('TOTAL_SESSIONS', attempts.toString().padStart(3, '0'), 1450);
-    iCtx.strokeStyle = 'rgba(0, 255, 65, 0.3)';
+
+    
+
+    // Radar Decor
+
+    iCtx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
+
     iCtx.beginPath(); iCtx.arc(850, 1350, 120, 0, Math.PI*2); iCtx.stroke();
+
     iCtx.moveTo(850, 1230); iCtx.lineTo(850, 1470); iCtx.moveTo(730, 1350); iCtx.lineTo(970, 1350); iCtx.stroke();
+
+
+
+    // Footer
+
     iCtx.fillStyle = '#00FF41'; iCtx.font = 'bold 60px Arial'; iCtx.fillText('@VOIDLINK', 100, 1750);
+
+    
+
     const link = document.createElement('a'); link.download = `VoidLink_Card.png`;
+
     link.href = iCanvas.toDataURL('image/png'); link.click();
+
 }
+
 </script>
 </body>
 </html>
