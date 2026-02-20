@@ -14,9 +14,9 @@
         
         #game-grid { display: grid; grid-template-columns: 1fr 280px; gap: 20px; flex-grow: 1; margin-top: 20px; }
         #pilot-box { border: 1px solid rgba(227, 218, 201, 0.1); position: relative; background: rgba(0,0,0,0.4); border-radius: 12px; overflow: hidden; cursor: crosshair; }
-        #target-zone { position: absolute; left: 0; width: 100%; height: 70px; background: rgba(0, 255, 65, 0.08); border-top: 2px solid var(--green); border-bottom: 2px solid var(--green); pointer-events: none; }
+        #target-zone { position: absolute; left: 0; width: 100%; height: 70px; background: rgba(0, 255, 65, 0.08); border-top: 2px solid var(--green); border-bottom: 2px solid var(--green); pointer-events: none; transition: height 0.5s, top 0.0s; }
         
-        #side-panel { display: flex; flex-direction: column; gap: 20px; }
+        #side-panel { display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
         .panel-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(227, 218, 201, 0.1); border-radius: 10px; padding: 15px; }
         
         #hex-display { font-size: 40px; font-weight: 900; color: #fff; text-align: center; margin: 10px 0; transition: color 0.3s; }
@@ -41,44 +41,199 @@
         #boss-overlay.active { display: flex; }
         #boss-label { font-size: 10px; letter-spacing: 5px; margin-bottom: 8px; }
         #boss-sub { font-size: 8px; color: var(--beige); opacity: 0.35; letter-spacing: 2px; margin-top: 10px; }
-        
         #surge-hint { font-size: 10px; letter-spacing: 3px; opacity: 0.6; margin-bottom: 16px; position: absolute; bottom: 60px; color: var(--green); }
+
+        /* NEXUS boss elements */
+        #nexus-path-display {
+            font-size: 13px; letter-spacing: 4px; color: var(--beige);
+            margin-bottom: 12px; text-align: center; font-weight: bold;
+        }
+        #nexus-progress {
+            font-size: 9px; letter-spacing: 2px; opacity: 0.5; margin-top: 8px;
+        }
+        #nexus-error-flash {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,49,49,0.12); border-radius: 12px;
+            pointer-events: none; opacity: 0; transition: opacity 0.15s;
+        }
+
+        /* OBJECTIVES SYSTEM */
+        .obj-sep { border: none; border-top: 1px solid rgba(227,218,201,0.08); margin: 10px 0; }
+        .obj-item { font-size: 8px; letter-spacing: 1px; margin-bottom: 7px; display: flex; align-items: flex-start; gap: 5px; line-height: 1.4; }
+        .obj-pending { color: rgba(227,218,201,0.45); }
+        .obj-done { color: var(--green); }
+        .obj-buff-tag { font-size: 7px; letter-spacing: 1px; padding: 1px 4px; border-radius: 2px; margin-left: 2px; }
+        .buff-row { font-size: 8px; letter-spacing: 1px; color: var(--orange); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+
+        /* buff flash on unlock */
+        @keyframes buffFlash { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .buff-unlocked { animation: buffFlash 0.4s 3; }
+
+        /* ── SCREEN SHAKE ── */
+        @keyframes shake {
+            0%,100%{transform:translate(0,0) rotate(0deg)}
+            15%{transform:translate(-6px,4px) rotate(-0.4deg)}
+            30%{transform:translate(5px,-3px) rotate(0.3deg)}
+            45%{transform:translate(-4px,5px) rotate(-0.2deg)}
+            60%{transform:translate(4px,-2px) rotate(0.2deg)}
+            75%{transform:translate(-3px,3px) rotate(-0.1deg)}
+        }
+        .shaking { animation: shake 0.35s ease-out; }
+
+        /* ── CRT SCANLINES ── */
+        #crt-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            pointer-events: none; z-index: 9999;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 2px,
+                rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px
+            );
+            display: none;
+        }
+        #crt-overlay.on { display: block; }
+
+        /* ── COMBO DISPLAY ── */
+        #combo-display {
+            position: absolute; top: 14px; left: 14px; z-index: 5;
+            font-size: 11px; letter-spacing: 2px; pointer-events: none;
+            transition: opacity 0.4s;
+        }
+        #combo-num { font-size: 28px; font-weight: 900; line-height: 1; }
+
+        /* ── PARTICLE CANVAS ── */
+        #particle-canvas {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            pointer-events: none; z-index: 4; border-radius: 12px;
+        }
+
+        /* ── STAT BADGES ── */
+        .stat-row { display:flex; justify-content:space-between; font-size:10px; margin-bottom:5px; }
+        .stat-val  { color: var(--green); font-weight: bold; }
+
+        /* ── KONAMI EASTER EGG ── */
+        @keyframes konami {
+            0%,100%{filter:hue-rotate(0deg) saturate(1)}
+            25%{filter:hue-rotate(90deg) saturate(2)}
+            50%{filter:hue-rotate(180deg) saturate(3)}
+            75%{filter:hue-rotate(270deg) saturate(2)}
+        }
+        .konami-mode { animation: konami 1.5s infinite !important; }
+        #konami-toast {
+            position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+            background:rgba(0,255,65,0.12); border:1px solid var(--green);
+            color:var(--green); font-size:9px; letter-spacing:3px;
+            padding:8px 20px; border-radius:4px; z-index:200;
+            opacity:0; transition:opacity 0.4s; pointer-events:none;
+        }
+        #konami-toast.show { opacity:1; }
+
+        /* ── END SCREEN STATS ── */
+        .end-stat { font-size:10px; letter-spacing:2px; margin:4px 0; opacity:0.7; }
+        .end-stat span { color:var(--green); font-weight:bold; }
     </style>
 </head>
 <body>
 
+<div id="crt-overlay"></div>
+<div id="konami-toast">⚡ VOID_PROTOCOL UNLOCKED</div>
+
 <div id="ui-frame">
     <div id="overlay">
-        <h1 style="letter-spacing:15px;font-weight:900;font-size:40px;">V O I D L I N K</h1>
-        <p style="opacity:0.5;font-size:9px;margin-top:10px;letter-spacing:3px;">OBLIVION_STATION // PROTOCOL 2026</p>
-        <div id="session-stats" style="margin:20px 0;display:none;">
-            <p id="last-uptime" style="font-size:48px;color:var(--red);font-weight:bold;"></p>
+
+        <!-- ══ HOME SCREEN ══ -->
+        <div id="screen-home">
+            <h1 style="letter-spacing:15px;font-weight:900;font-size:40px;">V O I D L I N K</h1>
+            <p style="opacity:0.5;font-size:9px;margin-top:10px;letter-spacing:3px;">OBLIVION_STATION // PROTOCOL 2026</p>
+            <div class="input-group" id="login-fields">
+                <input type="text" id="p1-input" class="pilot-input" placeholder="PILOT_01">
+                <input type="text" id="p2-input" class="pilot-input" placeholder="PILOT_02">
+            </div>
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;margin-top:20px;">
+                <button class="btn" onclick="start()">START SESSION</button>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap;">
+                <button id="audio-toggle-menu" onclick="toggleAudio()" style="background:none;border:1px solid rgba(227,218,201,0.25);color:var(--beige);font-family:inherit;font-size:9px;letter-spacing:2px;padding:7px 18px;border-radius:4px;cursor:pointer;transition:0.2s;">&#9654; AUDIO ON</button>
+                <button id="crt-toggle-menu" onclick="toggleCRT()" style="background:none;border:1px solid rgba(227,218,201,0.25);color:var(--beige);font-family:inherit;font-size:9px;letter-spacing:2px;padding:7px 18px;border-radius:4px;cursor:pointer;transition:0.2s;">&#9633; CRT OFF</button>
+            </div>
+            <p style="font-size:9px;color:var(--green);margin-top:28px;opacity:0.6;letter-spacing:2px;">DESIGNED FOR THE FUTURE @VoidLink</p>
         </div>
-        <div class="input-group" id="login-fields">
-            <input type="text" id="p1-input" class="pilot-input" placeholder="PILOT_01">
-            <input type="text" id="p2-input" class="pilot-input" placeholder="PILOT_02">
+
+        <!-- ══ END SCREEN ══ -->
+        <div id="screen-end" style="display:none;width:100%;max-width:480px;">
+
+            <!-- title row -->
+            <div style="font-size:9px;letter-spacing:4px;opacity:0.4;margin-bottom:6px;">SESSION_TERMINATED</div>
+            <p id="last-uptime" style="font-size:64px;color:var(--red);font-weight:900;line-height:1;margin-bottom:2px;"></p>
+            <div style="font-size:9px;letter-spacing:3px;opacity:0.35;margin-bottom:18px;">CORE UPTIME</div>
+
+            <!-- stats grid -->
+            <div id="end-stats-block" style="
+                display:grid; grid-template-columns:1fr 1fr;
+                gap:10px 20px; margin-bottom:22px;
+                border:1px solid rgba(227,218,201,0.08);
+                border-radius:8px; padding:14px 18px;
+                background:rgba(255,255,255,0.02);
+            "></div>
+
+            <!-- new best banner -->
+            <div id="new-best-banner" style="display:none;font-size:9px;letter-spacing:3px;color:var(--green);margin-bottom:16px;padding:6px 14px;border:1px solid rgba(0,255,65,0.3);border-radius:4px;background:rgba(0,255,65,0.05);">★ NEW PERSONAL RECORD</div>
+
+            <!-- primary actions -->
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-bottom:8px;">
+                <button class="btn" style="padding:12px 22px;font-size:10px;" onclick="restartSameNames()">⟳ RESTART</button>
+                <button class="btn" style="padding:12px 22px;font-size:10px;" onclick="showChangePilots()">✎ CHANGE PILOTS</button>
+                <button class="btn" style="padding:12px 22px;font-size:10px;" onclick="goHome()">⌂ HOME</button>
+            </div>
+
+            <!-- change-pilots sub-form (hidden by default) -->
+            <div id="change-pilots-form" style="display:none;margin:10px 0;">
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                    <input type="text" id="p1-end" class="pilot-input" style="width:150px;" placeholder="PILOT_01">
+                    <input type="text" id="p2-end" class="pilot-input" style="width:150px;" placeholder="PILOT_02">
+                </div>
+                <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
+                    <button class="btn" style="padding:10px 20px;font-size:10px;" onclick="startWithNewNames()">START</button>
+                    <button style="background:none;border:none;color:rgba(227,218,201,0.35);font-family:inherit;font-size:9px;letter-spacing:2px;cursor:pointer;padding:10px;" onclick="hideChangePilots()">CANCEL</button>
+                </div>
+            </div>
+
+            <!-- secondary actions -->
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:6px;flex-wrap:wrap;">
+                <button id="share-insta" style="display:none;background:none;border:1px solid rgba(227,218,201,0.2);color:rgba(227,218,201,0.55);font-family:inherit;font-size:8px;letter-spacing:2px;padding:6px 14px;border-radius:4px;cursor:pointer;transition:0.2s;" onmouseover="this.style.color='var(--beige)'" onmouseout="this.style.color='rgba(227,218,201,0.55)'" onclick="genInstaCard()">↓ GENERATE CARD</button>
+                <button id="share-x-btn" style="display:none;background:none;border:1px solid rgba(227,218,201,0.2);color:rgba(227,218,201,0.55);font-family:inherit;font-size:8px;letter-spacing:2px;padding:6px 14px;border-radius:4px;cursor:pointer;transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(227,218,201,0.55)'" onclick="shareOnX()">𝕏 SHARE ON X</button>
+                <button id="share-wa-btn" style="display:none;background:none;border:1px solid rgba(227,218,201,0.2);color:rgba(227,218,201,0.55);font-family:inherit;font-size:8px;letter-spacing:2px;padding:6px 14px;border-radius:4px;cursor:pointer;transition:0.2s;" onmouseover="this.style.color='#25D366'" onmouseout="this.style.color='rgba(227,218,201,0.55)'" onclick="shareOnWhatsApp()">⬡ WHATSAPP</button>
+            </div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;justify-content:center;margin-top:20px;">
-            <button class="btn" onclick="start()">START SESSION</button>
-            <button id="share-insta" class="btn" style="display:none;border-color:var(--slate);" onclick="genInstaCard()">GENERATE CARD</button>
-        </div>
-        <p style="font-size: 9px; color: var(--green); margin-top: 40px; opacity: 0.6; letter-spacing: 2px;">DESIGNED FOR THE FUTURE @VoidLink</p>
+
     </div>
 
     <div class="header">
         <div>PILOTS: <span id="pilot-name-ui">---</span></div>
         <div id="boss-badge" style="display:none;font-size:10px;letter-spacing:3px;"></div>
-        <div>UPTIME: <span id="time-ui">0.0</span>s</div>
+        <div style="display:flex;align-items:center;gap:18px;">
+            <button id="audio-toggle" onclick="toggleAudio()" style="background:none;border:1px solid rgba(227,218,201,0.25);color:var(--beige);font-family:inherit;font-size:9px;letter-spacing:2px;padding:4px 10px;border-radius:4px;cursor:pointer;transition:0.2s;">&#9654; AUDIO ON</button>
+            <span>UPTIME: <span id="time-ui">0.0</span>s</span>
+        </div>
     </div>
 
     <div id="game-grid">
         <div id="pilot-box">
             <div id="target-zone"></div>
             <canvas id="waveCanvas"></canvas>
+            <canvas id="particle-canvas"></canvas>
+            <div id="combo-display" style="opacity:0;">
+                <div id="combo-num" style="color:var(--green);">x1</div>
+                <div style="font-size:8px;letter-spacing:3px;opacity:0.6;">COMBO</div>
+            </div>
 
             <div id="boss-overlay">
                 <div id="boss-label">BOSS</div>
+                <!-- NEXUS elements -->
+                <div id="nexus-path-display" style="display:none;"></div>
                 <canvas id="boss-canvas"></canvas>
+                <div id="nexus-progress" style="display:none;"></div>
+                <div id="nexus-error-flash"></div>
+                <!-- SURGE hint -->
                 <div id="surge-hint" style="display:none;"></div>
                 <div id="boss-sub">---</div>
             </div>
@@ -91,10 +246,21 @@
                 <div id="input-preview"></div>
                 <div id="heat-meter"><div id="heat-bar"></div></div>
             </div>
-            <div class="panel-card" style="flex-grow:1;">
+            <div class="panel-card" style="flex-grow:1; overflow-y:auto;">
                 <div class="leaderboard-title">STATION LOG</div>
-                <div id="sync-info" style="font-size: 11px; margin-bottom: 10px;">SYNC: 0/3</div>
+                <div id="sync-info" style="font-size: 11px; margin-bottom: 6px;">SYNC: 0/3</div>
                 <div id="boss-count-ui" style="font-size: 11px; color: var(--green);">BOSS_CLEARED: 0</div>
+                <div class="stat-row" style="margin-top:6px;"><span>CPM</span><span id="cpm-ui" class="stat-val">--</span></div>
+                <div class="stat-row"><span>BEST</span><span id="best-ui" class="stat-val">--</span></div>
+                <div class="stat-row"><span>COMBO</span><span id="combo-side-ui" class="stat-val">x1</span></div>
+
+                <!-- ACTIVE BUFFS -->
+                <div id="buff-list" style="margin-top:8px;"></div>
+
+                <hr class="obj-sep">
+                <div style="font-size:9px;opacity:0.5;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Objectives</div>
+                <div id="obj-list"></div>
+
                 <div id="leaderboard-list" style="margin-top: 20px;"></div>
             </div>
         </div>
@@ -104,32 +270,656 @@
 <canvas id="instaCanvas" width="1080" height="1920" style="display:none;"></canvas>
 
 <script>
+// ═══════════════════════════════════
+//  AUDIO ENGINE  (Web Audio API)
+// ═══════════════════════════════════
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+
+// Master gain — lower it so nothing clips
+const masterGain = AC.createGain();
+masterGain.gain.value = 0.55;
+masterGain.connect(AC.destination);
+
+// ── Audio mute toggle ──
+let audioEnabled = true;
+function toggleAudio() {
+    audioEnabled = !audioEnabled;
+    masterGain.gain.setTargetAtTime(audioEnabled ? 0.55 : 0, AC.currentTime, 0.05);
+    const label  = audioEnabled ? '&#9654; AUDIO ON'  : '&#9646;&#9646; AUDIO OFF';
+    const border = audioEnabled ? 'rgba(227,218,201,0.25)' : 'rgba(227,218,201,0.1)';
+    const color  = audioEnabled ? 'var(--beige)' : 'rgba(227,218,201,0.3)';
+    ['audio-toggle', 'audio-toggle-menu'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.innerHTML = label;
+        btn.style.borderColor = border;
+        btn.style.color = color;
+    });
+}
+
+// Reverb convolver for bossier sounds
+function makeReverb(duration = 1.2, decay = 2.5) {
+    const len = AC.sampleRate * duration;
+    const buf = AC.createBuffer(2, len, AC.sampleRate);
+    for (let c = 0; c < 2; c++) {
+        const d = buf.getChannelData(c);
+        for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, decay);
+    }
+    const conv = AC.createConvolver(); conv.buffer = buf; return conv;
+}
+const reverb = makeReverb();
+const reverbGain = AC.createGain(); reverbGain.gain.value = 0.18;
+reverb.connect(reverbGain); reverbGain.connect(masterGain);
+
+function resume() { if (AC.state === 'suspended') AC.resume(); }
+
+// ── Utility: play a tone ──
+// type: 'sine'|'square'|'sawtooth'|'triangle'
+// freqs: [{f, t}] — frequency changes over time
+// adsr: { a, d, s, r, peak }
+function playTone(type, freqs, adsr, toReverb = false) {
+    resume();
+    const now  = AC.currentTime;
+    const osc  = AC.createOscillator();
+    const gain = AC.createGain();
+    osc.type = type;
+
+    // Frequency envelope
+    osc.frequency.setValueAtTime(freqs[0].f, now);
+    freqs.forEach(fp => osc.frequency.linearRampToValueAtTime(fp.f, now + fp.t));
+
+    // ADSR gain envelope
+    const peak = adsr.peak || 1;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(peak, now + (adsr.a || 0.01));
+    gain.gain.linearRampToValueAtTime((adsr.s || 0.3) * peak, now + (adsr.a || 0.01) + (adsr.d || 0.05));
+    const releaseStart = adsr.hold || 0.05;
+    gain.gain.setValueAtTime((adsr.s || 0.3) * peak, now + releaseStart);
+    gain.gain.linearRampToValueAtTime(0, now + releaseStart + (adsr.r || 0.1));
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+    if (toReverb) gain.connect(reverb);
+
+    osc.start(now);
+    osc.stop(now + releaseStart + (adsr.r || 0.1) + 0.05);
+}
+
+// ── Utility: noise burst ──
+function playNoise(duration, gainPeak, filterFreq, filterType = 'bandpass') {
+    resume();
+    const buf    = AC.createBuffer(1, AC.sampleRate * duration, AC.sampleRate);
+    const data   = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random()*2 - 1;
+    const src    = AC.createBufferSource(); src.buffer = buf;
+    const filter = AC.createBiquadFilter();
+    filter.type  = filterType; filter.frequency.value = filterFreq; filter.Q.value = 3;
+    const gain   = AC.createGain();
+    const now    = AC.currentTime;
+    gain.gain.setValueAtTime(gainPeak, now);
+    gain.gain.linearRampToValueAtTime(0, now + duration);
+    src.connect(filter); filter.connect(gain); gain.connect(masterGain);
+    src.start(now); src.stop(now + duration + 0.01);
+}
+
+// ══════════════════════════════════════
+//  NAMED SOUND FUNCTIONS
+// ══════════════════════════════════════
+
+// Soft digital tick on keypress
+function sfxKeyPress() {
+    playTone('square',
+        [{f:1200, t:0}, {f:900, t:0.03}],
+        {a:0.002, d:0.01, s:0, hold:0.01, r:0.03, peak:0.28}
+    );
+}
+
+// Clean ascending chime on correct hex code
+function sfxCodeCorrect() {
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((f, i) => {
+        setTimeout(() => {
+            playTone('sine',
+                [{f, t:0}, {f: f*1.01, t:0.12}],
+                {a:0.008, d:0.04, s:0.5, hold:0.1, r:0.18, peak:0.55},
+                true
+            );
+        }, i * 38);
+    });
+}
+
+// Short buzz on wrong / reset
+function sfxWrong() {
+    playTone('sawtooth',
+        [{f:180, t:0}, {f:80, t:0.12}],
+        {a:0.005, d:0.04, s:0.2, hold:0.08, r:0.08, peak:0.45}
+    );
+    playNoise(0.1, 0.3, 400, 'bandpass');
+}
+
+// Rapid ascending pulse on heat warning tick (called ~2× per sec max)
+let _warnSfxLast = 0;
+function sfxHeatWarn() {
+    const now = Date.now();
+    if (now - _warnSfxLast < 800) return;
+    _warnSfxLast = now;
+    playTone('square',
+        [{f:110, t:0}, {f:90, t:0.2}],
+        {a:0.01, d:0.05, s:0.1, hold:0.15, r:0.15, peak:0.35}
+    );
+}
+
+// Boss incoming — rising siren swell
+function sfxBossTrigger() {
+    resume();
+    // Low sweep
+    playTone('sawtooth',
+        [{f:80, t:0}, {f:320, t:0.6}, {f:160, t:0.9}],
+        {a:0.02, d:0.1, s:0.7, hold:0.7, r:0.3, peak:0.7},
+        true
+    );
+    // High stab
+    setTimeout(() => {
+        playTone('square',
+            [{f:880, t:0}, {f:440, t:0.4}],
+            {a:0.01, d:0.05, s:0.3, hold:0.3, r:0.25, peak:0.5},
+            true
+        );
+    }, 400);
+    playNoise(0.25, 0.6, 800, 'highpass');
+}
+
+// Boss cleared — dry industrial pulse
+function sfxBossCleared() {
+    resume();
+    // 3 hard punchy hits, evenly spaced, no reverb
+    [0, 120, 240].forEach((delay, i) => {
+        setTimeout(() => {
+            // Low square thud
+            playTone('square',
+                [{f: 160 - i*30, t:0}, {f: 60, t:0.06}],
+                {a:0.002, d:0.03, s:0, hold:0.05, r:0.06, peak:0.85}
+            );
+            // Noise crack on top
+            playNoise(0.07, 0.6, 500 + i*200, 'bandpass');
+        }, delay);
+    });
+    // Short metallic sine click at the end — confirmation
+    setTimeout(() => {
+        playTone('triangle',
+            [{f:440, t:0}, {f:220, t:0.08}],
+            {a:0.002, d:0.02, s:0, hold:0.04, r:0.05, peak:0.55}
+        );
+    }, 320);
+}
+
+// Boss failed — deep descending thud
+function sfxBossFail() {
+    playTone('sawtooth',
+        [{f:220, t:0}, {f:40, t:0.8}],
+        {a:0.01, d:0.1, s:0.5, hold:0.5, r:0.4, peak:0.8},
+        true
+    );
+    playNoise(0.3, 0.8, 200, 'lowpass');
+}
+
+// Oblivion ring lock click (metallic)
+function sfxRingLock(ringIndex) {
+    const f = 600 + ringIndex * 180;
+    playTone('triangle',
+        [{f, t:0}, {f: f*0.7, t:0.08}],
+        {a:0.003, d:0.03, s:0.1, hold:0.05, r:0.12, peak:0.6}
+    );
+    playNoise(0.06, 0.4, f * 1.5, 'bandpass');
+}
+
+// All rings locked — crystalline chord
+function sfxAllRingsLocked() {
+    [800, 1000, 1200, 1600].forEach((f, i) => {
+        setTimeout(() => {
+            playTone('sine',
+                [{f, t:0}, {f: f*1.02, t:0.3}],
+                {a:0.005, d:0.05, s:0.5, hold:0.25, r:0.35, peak:0.55},
+                true
+            );
+        }, i * 30);
+    });
+}
+
+// Surge hold hum (oscillating)
+let surgeHumNode = null, surgeHumGain = null;
+function sfxSurgeStart() {
+    resume();
+    surgeHumNode = AC.createOscillator();
+    surgeHumGain = AC.createGain();
+    const lfo    = AC.createOscillator();
+    const lfoGain= AC.createGain();
+    surgeHumNode.type = 'sawtooth';
+    surgeHumNode.frequency.setValueAtTime(110, AC.currentTime);
+    lfo.type = 'sine'; lfo.frequency.value = 6;
+    lfoGain.gain.value = 20;
+    lfo.connect(lfoGain); lfoGain.connect(surgeHumNode.frequency);
+    surgeHumGain.gain.setValueAtTime(0, AC.currentTime);
+    surgeHumGain.gain.linearRampToValueAtTime(0.35, AC.currentTime + 0.15);
+    surgeHumNode.connect(surgeHumGain); surgeHumGain.connect(masterGain);
+    surgeHumNode.start(); lfo.start();
+    // store lfo reference for cleanup
+    surgeHumNode._lfo = lfo; surgeHumNode._lfoGain = lfoGain;
+}
+function sfxSurgeStop() {
+    if (!surgeHumNode) return;
+    surgeHumGain.gain.linearRampToValueAtTime(0, AC.currentTime + 0.1);
+    surgeHumNode.stop(AC.currentTime + 0.12);
+    if (surgeHumNode._lfo) surgeHumNode._lfo.stop(AC.currentTime + 0.12);
+    surgeHumNode = null; surgeHumGain = null;
+}
+
+// Surge success ping
+function sfxSurgeHit() {
+    playTone('sine',
+        [{f:1200, t:0}, {f:1600, t:0.05}, {f:900, t:0.4}],
+        {a:0.005, d:0.04, s:0.4, hold:0.3, r:0.35, peak:0.65},
+        true
+    );
+}
+
+// Nexus node click — sci-fi blip
+function sfxNexusNode(step) {
+    const f = 440 + step * 80;
+    playTone('sine',
+        [{f, t:0}, {f: f*1.3, t:0.05}, {f:f, t:0.12}],
+        {a:0.004, d:0.03, s:0.2, hold:0.08, r:0.12, peak:0.55}
+    );
+}
+
+// Nexus wrong node
+function sfxNexusWrong() {
+    playTone('square',
+        [{f:200, t:0}, {f:60, t:0.25}],
+        {a:0.005, d:0.05, s:0.4, hold:0.2, r:0.15, peak:0.6}
+    );
+    playNoise(0.18, 0.5, 300, 'bandpass');
+}
+
+// Nexus complete
+function sfxNexusComplete() {
+    [330, 440, 550, 660, 880, 1100].forEach((f, i) => {
+        setTimeout(() => {
+            playTone('triangle',
+                [{f, t:0}, {f: f*1.5, t:0.2}],
+                {a:0.005, d:0.04, s:0.3, hold:0.15, r:0.25, peak:0.5},
+                true
+            );
+        }, i * 45);
+    });
+}
+
+// Objective unlocked — reward arpeggio
+function sfxObjectiveUnlocked() {
+    [523, 784, 1047, 1568].forEach((f, i) => {
+        setTimeout(() => {
+            playTone('sine',
+                [{f, t:0}, {f: f*1.01, t:0.2}],
+                {a:0.008, d:0.05, s:0.5, hold:0.15, r:0.3, peak:0.5},
+                true
+            );
+        }, i * 60);
+    });
+    // Sparkle noise
+    setTimeout(() => playNoise(0.15, 0.35, 3000, 'highpass'), 200);
+}
+
+// Game over — heavy descending drone
+function sfxGameOver() {
+    playTone('sawtooth',
+        [{f:300, t:0}, {f:200, t:0.2}, {f:80, t:1.2}],
+        {a:0.01, d:0.15, s:0.6, hold:0.8, r:0.8, peak:0.9},
+        true
+    );
+    playNoise(0.4, 0.7, 150, 'lowpass');
+    // distant echo
+    setTimeout(() => {
+        playTone('sine',
+            [{f:120, t:0}, {f:40, t:1.0}],
+            {a:0.02, d:0.1, s:0.4, hold:0.6, r:1.0, peak:0.45},
+            true
+        );
+    }, 300);
+}
+
+// ═══════════════════════════════════
+//  CORE VARS
+// ═══════════════════════════════════
 const canvas = document.getElementById('waveCanvas');
-const ctx = canvas.getContext('2d');
-const zone = document.getElementById('target-zone');
+const ctx    = canvas.getContext('2d');
+const zone   = document.getElementById('target-zone');
 const bossOv = document.getElementById('boss-overlay');
-const bCanvas = document.getElementById('boss-canvas');
-const bCtx = bCanvas.getContext('2d');
+const bCanvas= document.getElementById('boss-canvas');
+const bCtx   = bCanvas.getContext('2d');
 
 let running = false, time = 0, heat = 0, mouseY = 150, waveY = 150;
 let hex = '', input = '', playerName = '';
-let attempts = parseInt(localStorage.getItem('void_attempts_v5') || '0');
+let attempts    = parseInt(localStorage.getItem('void_attempts_v5') || '0');
 let bossCleared = 0;
-let codesSolved = 0;
-let inBoss = false;
-let bossRAF = null;
-let currentBoss = '';
+let codesSolved = 0;    // codes since last boss
+let totalSolved = 0;    // total codes this session
+let streak      = 0;    // consecutive correct codes without backspace
+let comboCount  = 0;    // consecutive correct codes (resets on fail/boss)
+let cpmStart    = 0;    // timestamp when session started (for CPM calc)
+let bestTime    = parseFloat(localStorage.getItem('void_best') || '0');
+let inBoss = false, bossRAF = null, currentBoss = '';
 
-const BOSS_TYPES = ['OBLIVION', 'SURGE'];
-const BOSS_COLOR = { OBLIVION: 'var(--red)', SURGE: '#FF69B4' };
+// ── Particle canvas ──
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx    = pCanvas.getContext('2d');
+let particles  = [];
+let particleRAF = null;
 
-// --- LOGICA BOSS OBLIVION (ANELLI) ---
+class Particle {
+    constructor(x, y, color) {
+        this.x    = x; this.y = y;
+        this.vx   = (Math.random() - 0.5) * 6;
+        this.vy   = (Math.random() - 0.5) * 6 - 2;
+        this.life = 1;
+        this.decay= 0.025 + Math.random() * 0.03;
+        this.r    = 2 + Math.random() * 3;
+        this.color= color;
+    }
+    update() { this.x += this.vx; this.y += this.vy; this.vy += 0.12; this.life -= this.decay; }
+    draw()   {
+        pCtx.beginPath(); pCtx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+        pCtx.fillStyle = this.color.replace('1)', `${this.life})`);
+        pCtx.fill();
+    }
+}
+
+function spawnParticles(x, y, color = 'rgba(0,255,65,1)', count = 22) {
+    for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color));
+    if (!particleRAF) particleLoop();
+}
+
+function particleLoop() {
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => { p.update(); p.draw(); });
+    if (particles.length > 0) particleRAF = requestAnimationFrame(particleLoop);
+    else { particleRAF = null; }
+}
+
+// ── Screen shake ──
+function shakeScreen(intensity = 1) {
+    const el = document.getElementById('ui-frame');
+    el.classList.remove('shaking');
+    void el.offsetWidth;
+    el.classList.add('shaking');
+    setTimeout(() => el.classList.remove('shaking'), 360);
+}
+
+// ── CRT toggle ──
+let crtEnabled = false;
+function toggleCRT() {
+    crtEnabled = !crtEnabled;
+    document.getElementById('crt-overlay').classList.toggle('on', crtEnabled);
+    const label = crtEnabled ? '&#9632; CRT ON' : '&#9633; CRT OFF';
+    const bdr   = crtEnabled ? 'rgba(227,218,201,0.5)' : 'rgba(227,218,201,0.25)';
+    ['crt-toggle-menu'].forEach(id => {
+        const b = document.getElementById(id); if (!b) return;
+        b.innerHTML = label; b.style.borderColor = bdr;
+    });
+}
+
+// ── Combo system ──
+let comboFadeTimer = null;
+function updateCombo(reset = false) {
+    if (reset) { comboCount = 0; }
+    const disp  = document.getElementById('combo-display');
+    const numEl = document.getElementById('combo-num');
+    const sideEl= document.getElementById('combo-side-ui');
+    const mult  = getComboMult();
+    const colors= ['#00FF41','#00BFFF','#FF8C00','#BF5FFF','#FF3131'];
+    const col   = colors[Math.min(Math.floor(comboCount / 3), colors.length - 1)];
+    numEl.innerText  = `x${mult}`;
+    numEl.style.color= col;
+    sideEl.innerText = `x${mult}`;
+    sideEl.style.color = col;
+    if (comboCount >= 2) {
+        disp.style.opacity = '1';
+        if (comboFadeTimer) clearTimeout(comboFadeTimer);
+        comboFadeTimer = setTimeout(() => { disp.style.opacity = '0'; }, 2000);
+    } else {
+        disp.style.opacity = '0';
+    }
+}
+
+function getComboMult() {
+    if (comboCount >= 12) return 5;
+    if (comboCount >= 8)  return 4;
+    if (comboCount >= 5)  return 3;
+    if (comboCount >= 3)  return 2;
+    return 1;
+}
+
+// ── CPM tracking ──
+function getCPM() {
+    const elapsed = (Date.now() - cpmStart) / 60000;
+    if (elapsed < 0.05) return 0;
+    return Math.round(totalSolved / elapsed);
+}
+
+function updateCPM() {
+    const cpm = getCPM();
+    document.getElementById('cpm-ui').innerText = cpm > 0 ? cpm : '--';
+}
+
+// ── Best time display ──
+function updateBestUI() {
+    const b = document.getElementById('best-ui');
+    b.innerText = bestTime > 0 ? bestTime.toFixed(1) + 's' : '--';
+}
+
+// ── Wave color based on heat ──
+function getWaveColor() {
+    // 0→40: green, 40→70: yellow, 70→100: red
+    const h = Math.min(heat, getMaxHeat());
+    const pct = h / getMaxHeat();
+    if (pct < 0.4) {
+        // green → yellow
+        const t = pct / 0.4;
+        const r = Math.round(t * 255);
+        const g = 255;
+        return `rgb(${r},${g},65)`;
+    } else {
+        // yellow → red
+        const t = (pct - 0.4) / 0.6;
+        const r = 255;
+        const g = Math.round((1 - t) * 255);
+        return `rgb(${r},${g},0)`;
+    }
+}
+
+// ── Difficulty ramp — wave speed increases with time ──
+function getWaveSpeed() {
+    // base 1.5, ramps to 3.0 over 120s
+    return 1.5 + Math.min(time / 120, 1) * 1.5;
+}
+function getWaveAmplitude() {
+    return 80 + Math.min(time / 90, 1) * 40;
+}
+
+// ── Konami Code ──
+const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+let konamiIdx = 0;
+let konamiActive = false;
+window.addEventListener('keydown', e => {
+    if (e.key === KONAMI[konamiIdx]) {
+        konamiIdx++;
+        if (konamiIdx === KONAMI.length) {
+            konamiIdx = 0;
+            activateKonami();
+        }
+    } else {
+        konamiIdx = e.key === KONAMI[0] ? 1 : 0;
+    }
+});
+function activateKonami() {
+    konamiActive = !konamiActive;
+    document.getElementById('ui-frame').classList.toggle('konami-mode', konamiActive);
+    const toast = document.getElementById('konami-toast');
+    toast.innerText = konamiActive ? '⚡ VOID_PROTOCOL UNLOCKED' : '⚡ VOID_PROTOCOL DISABLED';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+const BOSS_TYPES = ['OBLIVION', 'SURGE', 'NEXUS'];
+const BOSS_COLOR = { OBLIVION:'var(--red)', SURGE:'#FF69B4', NEXUS:'var(--blue)' };
+
+// ═══════════════════════════════════
+//  OBJECTIVES & BUFFS
+// ═══════════════════════════════════
+const ALL_OBJECTIVES = [
+    {
+        id:'streak5',   label:'SOLVE 5 IN A ROW',
+        check: s => s.streak >= 5,
+        buff:'extraCooldown', buffLabel:'−20 HEAT/CODE',
+        buffColor:'#FF8C00'
+    },
+    {
+        id:'survive60', label:'SURVIVE 60s',
+        check: s => s.time >= 60,
+        buff:'heatDecay', buffLabel:'HEAT AUTO-DECAYS',
+        buffColor:'#00BFFF'
+    },
+    {
+        id:'boss1',     label:'CLEAR FIRST BOSS',
+        check: s => s.bossCleared >= 1,
+        buff:'widerZone', buffLabel:'WIDER TARGET ZONE',
+        buffColor:'#00FF41'
+    },
+    {
+        id:'solve10',   label:'SOLVE 10 CODES',
+        check: s => s.totalSolved >= 10,
+        buff:'slowHeat', buffLabel:'HEAT −30% SLOWER',
+        buffColor:'#BF5FFF'
+    },
+    {
+        id:'boss2',     label:'CLEAR 2 BOSSES',
+        check: s => s.bossCleared >= 2,
+        buff:'bossEasy', buffLabel:'BOSS TOLERANCE +50%',
+        buffColor:'#FF3131'
+    },
+    {
+        id:'streak7',   label:'SOLVE 7 IN A ROW',
+        check: s => s.streak >= 7,
+        buff:'megaCool', buffLabel:'−50 HEAT/CODE',
+        buffColor:'#FF8C00'
+    },
+    {
+        id:'survive90', label:'SURVIVE 90s',
+        check: s => s.time >= 90,
+        buff:'ultraSlow', buffLabel:'HEAT −50% SLOWER',
+        buffColor:'#BF5FFF'
+    },
+    {
+        id:'boss3',     label:'CLEAR 3 BOSSES',
+        check: s => s.bossCleared >= 3,
+        buff:'shield',   buffLabel:'MAX HEAT CAP −20',
+        buffColor:'#FF3131'
+    },
+];
+
+let sessionObjectives = [];
+let completedObjectives = new Set();
+let buffs = {}; // { buffKey: true }
+
+function pickObjectives() {
+    const pool = [...ALL_OBJECTIVES].sort(() => Math.random() - 0.5);
+    sessionObjectives = pool.slice(0, 3);
+    completedObjectives.clear();
+    buffs = {};
+}
+
+function checkObjectives() {
+    const state = { streak, time, bossCleared, totalSolved };
+    let changed = false;
+    sessionObjectives.forEach(obj => {
+        if (!completedObjectives.has(obj.id) && obj.check(state)) {
+            completedObjectives.add(obj.id);
+            buffs[obj.buff] = true;
+            applyImmediateBuff(obj.buff);
+            changed = true;
+            flashBuffUnlock(obj);
+        }
+    });
+    if (changed) renderUI();
+    renderObjectives();
+}
+
+function applyImmediateBuff(buffKey) {
+    if (buffKey === 'widerZone') zone.style.height = '110px';
+}
+
+function flashBuffUnlock(obj) {
+    sfxObjectiveUnlocked();
+    const buffList = document.getElementById('buff-list');
+    buffList.classList.remove('buff-unlocked');
+    void buffList.offsetWidth; // reflow
+    buffList.classList.add('buff-unlocked');
+}
+
+function renderObjectives() {
+    const objEl = document.getElementById('obj-list');
+    objEl.innerHTML = sessionObjectives.map(obj => {
+        const done = completedObjectives.has(obj.id);
+        return `<div class="obj-item ${done ? 'obj-done' : 'obj-pending'}">
+            <span>${done ? '✓' : '○'}</span>
+            <span>${obj.label}${done
+                ? `<br><span class="obj-buff-tag" style="background:${obj.buffColor}22;color:${obj.buffColor};border:1px solid ${obj.buffColor}44;">⚡ ${obj.buffLabel}</span>`
+                : ''
+            }</span>
+        </div>`;
+    }).join('');
+
+    // Active buffs strip
+    const activeBuffs = sessionObjectives.filter(o => completedObjectives.has(o.id));
+    document.getElementById('buff-list').innerHTML = activeBuffs.map(o =>
+        `<div class="buff-row"><span style="color:${o.buffColor}">■</span> ${o.buffLabel}</div>`
+    ).join('');
+}
+
+// Cooldown per correct hex, considering buffs
+function getHeatCooldown() {
+    if (buffs.megaCool)      return 50;
+    if (buffs.extraCooldown) return 55;
+    return 35;
+}
+
+// Heat gain per frame, considering buffs
+function getHeatGain() {
+    let base = 0.08;
+    if (buffs.ultraSlow) base *= 0.5;
+    else if (buffs.slowHeat) base *= 0.7;
+    return base;
+}
+
+// Max heat before death
+function getMaxHeat() {
+    return buffs.shield ? 80 : 100;
+}
+
+// Boss tolerance for OBLIVION / SURGE
+function getBossTolerance() {
+    return buffs.bossEasy ? 0.40 : 0.28;
+}
+
+// ═══════════════════════════════════
+//  BOSS: OBLIVION (rings)
+// ═══════════════════════════════════
 let rings = [];
 class Ring {
     constructor(i) {
         this.radius = 40 + i * 35;
-        this.angle = Math.random() * Math.PI * 2;
-        this.speed = (0.03 + i * 0.01) * (Math.random() > 0.5 ? 1 : -1);
+        this.angle  = Math.random() * Math.PI * 2;
+        this.speed  = (0.03 + i * 0.01) * (Math.random() > 0.5 ? 1 : -1);
         this.target = Math.random() * Math.PI * 2;
         this.locked = false;
     }
@@ -146,80 +936,275 @@ class Ring {
     }
 }
 
-// --- LOGICA BOSS SURGE (HOLD) ---
+// ═══════════════════════════════════
+//  BOSS: SURGE (hold & release)
+// ═══════════════════════════════════
 let surgeHeld = false, surgeAngle = 0, surgeTarget = 0, surgeSpeed = 1.5;
 
+// ═══════════════════════════════════
+//  BOSS: NEXUS (node path puzzle)
+// ═══════════════════════════════════
+let nexusNodes   = [];
+let nexusSeq     = [];   // correct click order (array of node ids, 0-based)
+let nexusStep    = 0;    // how many steps done
+let nexusPulse   = 0;    // for animation
+
+function buildNexus() {
+    const LETTERS = ['A','B','C','D','E','F'];
+    const count   = 6;
+    const pad     = 52;
+    const W = bCanvas.width, H = bCanvas.height;
+    nexusNodes = [];
+
+    // Place nodes with minimum distance enforcement
+    for (let i = 0; i < count; i++) {
+        let x, y, tries = 0;
+        do {
+            x = pad + Math.random() * (W - pad * 2);
+            y = pad + Math.random() * (H - pad * 2);
+            tries++;
+        } while (tries < 60 && nexusNodes.some(n => Math.hypot(n.x - x, n.y - y) < 72));
+        nexusNodes.push({ id: i, label: LETTERS[i], x, y, hit: false });
+    }
+
+    // Random sequence — indices shuffled
+    nexusSeq  = [...Array(count).keys()].sort(() => Math.random() - 0.5);
+    nexusStep = 0;
+    nexusPulse= 0;
+}
+
+function nexusPathString() {
+    return nexusSeq.map(i => nexusNodes[i].label).join(' → ');
+}
+
+function nexusLoop() {
+    if (!inBoss || currentBoss !== 'NEXUS') return;
+    bCtx.clearRect(0, 0, bCanvas.width, bCanvas.height);
+    nexusPulse += 0.07;
+    const cx = bCanvas.width / 2, cy = bCanvas.height / 2;
+
+    // Draw completed path lines
+    for (let s = 0; s < nexusStep - 1; s++) {
+        const a = nexusNodes[nexusSeq[s]], b = nexusNodes[nexusSeq[s+1]];
+        bCtx.beginPath(); bCtx.moveTo(a.x, a.y); bCtx.lineTo(b.x, b.y);
+        bCtx.strokeStyle = 'rgba(0,255,65,0.55)'; bCtx.lineWidth = 1.5;
+        bCtx.setLineDash([4, 4]); bCtx.stroke(); bCtx.setLineDash([]);
+    }
+
+    // Draw faint connector web (red herrings)
+    for (let i = 0; i < nexusNodes.length; i++) {
+        for (let j = i+1; j < nexusNodes.length; j++) {
+            bCtx.beginPath(); bCtx.moveTo(nexusNodes[i].x, nexusNodes[i].y);
+            bCtx.lineTo(nexusNodes[j].x, nexusNodes[j].y);
+            bCtx.strokeStyle = 'rgba(255,255,255,0.025)'; bCtx.lineWidth = 1;
+            bCtx.stroke();
+        }
+    }
+
+    // Draw nodes
+    nexusNodes.forEach(node => {
+        const isHit      = nexusSeq.indexOf(node.id) < nexusStep;
+        const isNext     = nexusSeq[nexusStep] === node.id;
+        const pulseScale = isNext ? 1 + Math.sin(nexusPulse) * 0.12 : 1;
+        const r          = 20 * pulseScale;
+
+        // Outer glow for next target
+        if (isNext) {
+            bCtx.beginPath(); bCtx.arc(node.x, node.y, r + 10, 0, Math.PI*2);
+            bCtx.strokeStyle = `rgba(0,191,255,${0.15 + Math.sin(nexusPulse)*0.1})`; bCtx.lineWidth = 2; bCtx.stroke();
+        }
+
+        bCtx.beginPath(); bCtx.arc(node.x, node.y, r, 0, Math.PI*2);
+        if (isHit)       bCtx.fillStyle = 'rgba(0,255,65,0.18)';
+        else if (isNext) bCtx.fillStyle = 'rgba(0,191,255,0.14)';
+        else             bCtx.fillStyle = 'rgba(255,255,255,0.04)';
+        bCtx.fill();
+
+        bCtx.strokeStyle = isHit ? 'rgba(0,255,65,0.8)' : isNext ? 'rgba(0,191,255,0.9)' : 'rgba(255,255,255,0.22)';
+        bCtx.lineWidth   = isNext ? 2 : 1.5;
+        bCtx.stroke();
+
+        // Label
+        bCtx.fillStyle     = isHit ? 'rgba(0,255,65,0.7)' : isNext ? '#fff' : 'rgba(255,255,255,0.45)';
+        bCtx.font          = `bold ${isNext ? 15 : 13}px monospace`;
+        bCtx.textAlign     = 'center';
+        bCtx.textBaseline  = 'middle';
+        bCtx.fillText(node.label, node.x, node.y);
+    });
+
+    bossRAF = requestAnimationFrame(nexusLoop);
+}
+
+function nexusClick(ex, ey) {
+    const rect   = bCanvas.getBoundingClientRect();
+    const scaleX = bCanvas.width  / rect.width;
+    const scaleY = bCanvas.height / rect.height;
+    const cx = (ex - rect.left) * scaleX;
+    const cy = (ey - rect.top)  * scaleY;
+
+    // Find any node close to click
+    const hit = nexusNodes.find(n => Math.hypot(cx - n.x, cy - n.y) <= 28);
+    if (!hit) return;
+
+    if (nexusSeq[nexusStep] === hit.id) {
+        nexusStep++;
+        sfxNexusNode(nexusStep);
+        document.getElementById('nexus-progress').innerText =
+            `STEP ${nexusStep} / ${nexusSeq.length}`;
+        if (nexusStep === nexusSeq.length) {
+            cancelAnimationFrame(bossRAF);
+            sfxNexusComplete();
+            setTimeout(() => exitBoss(true), 450);
+        }
+    } else {
+        sfxNexusWrong();
+        const flash = document.getElementById('nexus-error-flash');
+        flash.style.opacity = '1';
+        setTimeout(() => { flash.style.opacity = '0'; }, 140);
+        setTimeout(() => exitBoss(false), 450);
+    }
+}
+
+// ═══════════════════════════════════
+//  START
+// ═══════════════════════════════════
 function start() {
     const p1 = document.getElementById('p1-input').value.trim();
     const p2 = document.getElementById('p2-input').value.trim();
     if (!p1 || !p2) return;
     playerName = p1 + ' + ' + p2;
-    canvas.width = document.getElementById('pilot-box').clientWidth;
+    document.getElementById('overlay').style.display = 'none';
+    _startSession();
+}
+
+function _startSession() {
+    canvas.width  = document.getElementById('pilot-box').clientWidth;
     canvas.height = document.getElementById('pilot-box').clientHeight;
     bCanvas.width = 400; bCanvas.height = 400;
 
     attempts++;
     localStorage.setItem('void_attempts_v5', attempts);
-    
+
     time = 0; heat = 0; codesSolved = 0; bossCleared = 0;
+    totalSolved = 0; streak = 0; comboCount = 0;
+    cpmStart = Date.now();
+    particles = [];
     running = true; inBoss = false;
+
+    // Resize particle canvas
+    pCanvas.width  = document.getElementById('pilot-box').clientWidth;
+    pCanvas.height = document.getElementById('pilot-box').clientHeight;
+
+    // Reset visuals
+    zone.style.height = '70px';
     document.getElementById('overlay').style.display = 'none';
-    document.getElementById('boss-count-ui').innerText = "BOSS_CLEARED: 0";
-    document.getElementById('sync-info').innerText = "SYNC: 0/3";
-    
+    document.getElementById('screen-home').style.display = 'none';
+    document.getElementById('screen-end').style.display  = 'none';
+    document.getElementById('boss-count-ui').innerText = 'BOSS_CLEARED: 0';
+    document.getElementById('sync-info').innerText = 'SYNC: 0/3';
+    document.getElementById('ui-frame').classList.remove('warning');
+    document.getElementById('boss-badge').style.display = 'none';
+    document.getElementById('pilot-name-ui').innerText = playerName.toUpperCase();
+    updateCombo();
+    updateBestUI();
+    pickObjectives();
+    renderObjectives();
     genHex();
     loop();
 }
 
+// ═══════════════════════════════════
+//  MAIN LOOP
+// ═══════════════════════════════════
 function loop() {
     if (!running || inBoss) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    time += 0.016; 
-    heat += 0.08;
-    
-    let targetY = (canvas.height / 2 - 35) + (Math.sin(time * 1.5) * 80);
+
+    time += 0.016;
+    heat += getHeatGain();
+
+    const wSpeed = getWaveSpeed();
+    const wAmp   = getWaveAmplitude();
+    let targetY = (canvas.height / 2 - 35) + (Math.sin(time * wSpeed) * wAmp);
     zone.style.top = targetY + 'px';
     waveY += (mouseY - waveY) * 0.15;
 
-    if (Math.abs(waveY - (targetY + 35)) > 45) {
+    const offTarget = Math.abs(waveY - (targetY + 35)) > 45;
+    if (offTarget) {
         heat += 0.4;
         document.getElementById('ui-frame').classList.add('warning');
+        sfxHeatWarn();
     } else {
         document.getElementById('ui-frame').classList.remove('warning');
+        if (buffs.heatDecay) heat = Math.max(0, heat - 0.07);
     }
 
-    ctx.beginPath(); ctx.strokeStyle = "#E3DAC9"; ctx.lineWidth = 2;
+    const waveCol = getWaveColor();
+    ctx.beginPath(); ctx.strokeStyle = waveCol; ctx.lineWidth = 2;
     for (let x = 0; x < canvas.width; x += 10) {
         let y = waveY + Math.sin(x * 0.02 + time * 4) * 15;
         x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
 
+    // Heat bar color sync
+    document.getElementById('heat-bar').style.background = waveCol;
+
     document.getElementById('time-ui').innerText = time.toFixed(1);
     document.getElementById('heat-bar').style.width = heat + '%';
+    updateCPM();
+    checkObjectives();
 
-    if (heat >= 100) endGame();
+    if (heat >= getMaxHeat()) endGame();
     else requestAnimationFrame(loop);
 }
 
+// ═══════════════════════════════════
+//  BOSS TRIGGER
+// ═══════════════════════════════════
 function triggerBoss() {
     inBoss = true;
+    sfxBossTrigger();
+    shakeScreen();
+    comboCount = 0; updateCombo();
     currentBoss = BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
+    const col = BOSS_COLOR[currentBoss];
+
     bossOv.classList.add('active');
-    document.getElementById('boss-label').innerText = "⚠ " + currentBoss;
-    document.getElementById('boss-label').style.color = BOSS_COLOR[currentBoss];
+    document.getElementById('boss-label').innerText = '⚠ ' + currentBoss;
+    document.getElementById('boss-label').style.color = col;
     document.getElementById('boss-badge').style.display = 'block';
     document.getElementById('boss-badge').innerText = currentBoss + '_SEQUENCE';
-    document.getElementById('boss-badge').style.color = BOSS_COLOR[currentBoss];
+    document.getElementById('boss-badge').style.color = col;
+    document.getElementById('ui-frame').classList.remove('warning');
 
-    if (currentBoss === 'OBLIVION') {
-        rings = [new Ring(0), new Ring(1), new Ring(2), new Ring(3)];
-        document.getElementById('boss-sub').innerText = "LOCK ALL RINGS";
-    } else {
-        surgeAngle = 0; surgeTarget = Math.random() * 360;
-        document.getElementById('boss-sub').innerText = "HOLD & RELEASE IN ZONE";
-        document.getElementById('surge-hint').style.display = 'block';
+    // hide all boss-specific elements first
+    document.getElementById('nexus-path-display').style.display = 'none';
+    document.getElementById('nexus-progress').style.display = 'none';
+    document.getElementById('nexus-error-flash').style.opacity = '0';
+    document.getElementById('surge-hint').style.display = 'none';
+    bCanvas.style.display = 'block';
+
+    switch (currentBoss) {
+        case 'OBLIVION':
+            rings = [new Ring(0), new Ring(1), new Ring(2), new Ring(3)];
+            document.getElementById('boss-sub').innerText = 'CLICK TO LOCK ALL RINGS';
+            break;
+        case 'SURGE':
+            surgeAngle = 0; surgeHeld = false;
+            surgeTarget = Math.random() * 360;
+            document.getElementById('surge-hint').style.display = 'block';
+            document.getElementById('boss-sub').innerText = 'HOLD & RELEASE IN ZONE';
+            break;
+        case 'NEXUS':
+            buildNexus();
+            document.getElementById('nexus-path-display').style.display = 'block';
+            document.getElementById('nexus-path-display').innerText = 'PATH: ' + nexusPathString();
+            document.getElementById('nexus-progress').style.display = 'block';
+            document.getElementById('nexus-progress').innerText = `STEP 0 / ${nexusSeq.length}`;
+            document.getElementById('boss-sub').innerText = 'CLICK NODES IN ORDER — NO MISTAKES';
+            nexusLoop();
+            return; // nexus has its own loop
     }
     bossLoop();
 }
@@ -231,16 +1216,17 @@ function bossLoop() {
 
     if (currentBoss === 'OBLIVION') {
         rings.forEach(r => { r.update(); r.draw(cx, cy); });
-    } else {
+    } else if (currentBoss === 'SURGE') {
         surgeAngle = (surgeAngle + surgeSpeed) % 360;
-        // Pista
+        // Track
         bCtx.beginPath(); bCtx.arc(cx, cy, 120, 0, Math.PI*2);
         bCtx.strokeStyle = 'rgba(255,255,255,0.05)'; bCtx.lineWidth = 15; bCtx.stroke();
-        // Target
+        // Target zone
         let tRad = surgeTarget * Math.PI / 180;
-        bCtx.beginPath(); bCtx.arc(cx, cy, 120, tRad - 0.3, tRad + 0.3);
+        const tol = buffs.bossEasy ? 0.55 : 0.3;
+        bCtx.beginPath(); bCtx.arc(cx, cy, 120, tRad - tol, tRad + tol);
         bCtx.strokeStyle = 'var(--green)'; bCtx.lineWidth = 15; bCtx.stroke();
-        // Cursore
+        // Cursor
         let cRad = surgeAngle * Math.PI / 180;
         bCtx.beginPath(); bCtx.arc(cx + Math.cos(cRad)*120, cy + Math.sin(cRad)*120, 8, 0, Math.PI*2);
         bCtx.fillStyle = surgeHeld ? BOSS_COLOR.SURGE : '#fff'; bCtx.fill();
@@ -248,88 +1234,250 @@ function bossLoop() {
     bossRAF = requestAnimationFrame(bossLoop);
 }
 
-function bossAction() {
+// ═══════════════════════════════════
+//  BOSS ACTION (click / key)
+// ═══════════════════════════════════
+function bossAction(e) {
+    if (!inBoss) return;
     if (currentBoss === 'OBLIVION') {
         const active = rings.find(r => !r.locked);
         if (active) {
             let diff = Math.abs((active.angle % (Math.PI*2)) - (active.target % (Math.PI*2)));
             if (diff > Math.PI) diff = Math.PI*2 - diff;
-            if (diff < 0.28) {
+            if (diff < getBossTolerance()) {
                 active.locked = true;
-                if (rings.every(r => r.locked)) exitBoss(true);
-            } else exitBoss(false);
+                const lockedCount = rings.filter(r => r.locked).length;
+                sfxRingLock(lockedCount - 1);
+                if (rings.every(r => r.locked)) {
+                    setTimeout(() => sfxAllRingsLocked(), 80);
+                    setTimeout(() => exitBoss(true), 300);
+                }
+            } else {
+                sfxBossFail();
+                exitBoss(false);
+            }
         }
-    } else { surgeHeld = true; }
+    } else if (currentBoss === 'SURGE') {
+        surgeHeld = true;
+        sfxSurgeStart();
+    } else if (currentBoss === 'NEXUS') {
+        const ex = e ? (e.touches ? e.touches[0].clientX : e.clientX) : 0;
+        const ey = e ? (e.touches ? e.touches[0].clientY : e.clientY) : 0;
+        nexusClick(ex, ey);
+    }
 }
 
 function exitBoss(success) {
     inBoss = false;
     cancelAnimationFrame(bossRAF);
+    sfxSurgeStop(); // safe to call even if not surge — checks null
     bossOv.classList.remove('active');
     document.getElementById('boss-badge').style.display = 'none';
     document.getElementById('surge-hint').style.display = 'none';
-    
+
     if (success) {
+        sfxBossCleared();
         bossCleared++;
         codesSolved = 0;
+        // Boss clear particle burst from center of pilot box
+        const pb   = document.getElementById('pilot-box').getBoundingClientRect();
+        const pR   = pCanvas.getBoundingClientRect();
+        const cx   = pb.left - pR.left + pb.width / 2;
+        const cy   = pb.top  - pR.top  + pb.height / 2;
+        spawnParticles(cx, cy, 'rgba(255,140,0,1)', 40);
+        spawnParticles(cx, cy, 'rgba(0,191,255,1)', 30);
         document.getElementById('boss-count-ui').innerText = `BOSS_CLEARED: ${bossCleared}`;
-        document.getElementById('sync-info').innerText = "SYNC: 0/3";
+        document.getElementById('sync-info').innerText = 'SYNC: 0/3';
+        checkObjectives();
         genHex();
         loop();
-    } else { endGame(); }
+    } else {
+        endGame();
+    }
 }
 
+// ═══════════════════════════════════
+//  END GAME
+// ═══════════════════════════════════
 function endGame() {
     running = false;
+    sfxGameOver();
+    shakeScreen();
+
+    // Best time check
+    const isNewBest = time > bestTime;
+    if (isNewBest) {
+        bestTime = time;
+        localStorage.setItem('void_best', bestTime.toFixed(1));
+    }
+    updateBestUI();
+
+    // Show overlay on END screen
     document.getElementById('overlay').style.display = 'flex';
-    document.getElementById('session-stats').style.display = 'block';
-    document.getElementById('last-uptime').innerText = time.toFixed(1) + 's';
+    document.getElementById('screen-home').style.display = 'none';
+    document.getElementById('screen-end').style.display = 'block';
+    document.getElementById('change-pilots-form').style.display = 'none';
     document.getElementById('share-insta').style.display = 'inline-block';
-    document.getElementById('login-fields').style.display = 'none';
+    document.getElementById('share-x-btn').style.display = 'inline-block';
+    document.getElementById('share-wa-btn').style.display = 'inline-block';
+
+    // Big time
+    document.getElementById('last-uptime').innerText = time.toFixed(1) + 's';
+
+    // New best banner
+    document.getElementById('new-best-banner').style.display = isNewBest && bestTime > 0 ? 'block' : 'none';
+
+    // Stats grid
+    const cpm = getCPM();
+    document.getElementById('end-stats-block').innerHTML = `
+        <div style="text-align:left;">
+            <div style="font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:3px;">PILOTS</div>
+            <div style="font-size:11px;font-weight:bold;">${playerName.toUpperCase()}</div>
+        </div>
+        <div style="text-align:left;">
+            <div style="font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:3px;">PERSONAL BEST</div>
+            <div style="font-size:11px;font-weight:bold;color:var(--green);">${bestTime.toFixed(1)}s</div>
+        </div>
+        <div style="text-align:left;">
+            <div style="font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:3px;">CODES SOLVED</div>
+            <div style="font-size:11px;font-weight:bold;">${totalSolved}</div>
+        </div>
+        <div style="text-align:left;">
+            <div style="font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:3px;">CPM</div>
+            <div style="font-size:11px;font-weight:bold;">${cpm > 0 ? cpm : '--'}</div>
+        </div>
+        <div style="text-align:left;">
+            <div style="font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:3px;">BOSSES CLEARED</div>
+            <div style="font-size:11px;font-weight:bold;color:var(--orange);">${bossCleared}</div>
+        </div>
+        <div style="text-align:left;">
+            <div style="font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:3px;">BEST STREAK</div>
+            <div style="font-size:11px;font-weight:bold;">${streak}</div>
+        </div>
+        <div style="text-align:left;">
+            <div style="font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:3px;">SESSION #</div>
+            <div style="font-size:11px;font-weight:bold;">${String(attempts).padStart(3,'0')}</div>
+        </div>
+        <div style="text-align:left;">
+            <div style="font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:3px;">MAX COMBO</div>
+            <div style="font-size:11px;font-weight:bold;">x${getComboMult()}</div>
+        </div>
+    `;
 }
 
+// ── Screen navigation ──
+function goHome() {
+    document.getElementById('screen-end').style.display  = 'none';
+    document.getElementById('screen-home').style.display = 'flex';
+    document.getElementById('screen-home').style.flexDirection = 'column';
+    document.getElementById('screen-home').style.alignItems = 'center';
+    // clear fields so they can enter fresh names
+    document.getElementById('p1-input').value = '';
+    document.getElementById('p2-input').value = '';
+}
+
+function restartSameNames() {
+    // Restart immediately with same pilot names, no need to re-enter
+    document.getElementById('overlay').style.display = 'none';
+    // Re-use existing playerName — call internal start logic directly
+    _startSession();
+}
+
+function showChangePilots() {
+    const form = document.getElementById('change-pilots-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    // Pre-fill with current names
+    const parts = playerName.split(' + ');
+    document.getElementById('p1-end').value = parts[0] || '';
+    document.getElementById('p2-end').value = parts[1] || '';
+    if (form.style.display === 'block') document.getElementById('p1-end').focus();
+}
+
+function hideChangePilots() {
+    document.getElementById('change-pilots-form').style.display = 'none';
+}
+
+function startWithNewNames() {
+    const p1 = document.getElementById('p1-end').value.trim();
+    const p2 = document.getElementById('p2-end').value.trim();
+    if (!p1 || !p2) return;
+    // Update home screen inputs too
+    document.getElementById('p1-input').value = p1;
+    document.getElementById('p2-input').value = p2;
+    playerName = p1 + ' + ' + p2;
+    document.getElementById('overlay').style.display = 'none';
+    _startSession();
+}
+
+// ═══════════════════════════════════
+//  HEX GEN
+// ═══════════════════════════════════
 function genHex() {
     hex = Math.random().toString(16).toUpperCase().substring(2, 6);
     document.getElementById('hex-display').innerText = hex;
     input = ''; document.getElementById('input-preview').innerText = '';
 }
 
-// Input Eventi
+function renderUI() {
+    document.getElementById('pilot-name-ui').innerText = playerName.toUpperCase();
+}
+
+// ═══════════════════════════════════
+//  INPUT EVENTS
+// ═══════════════════════════════════
 window.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
     mouseY = e.clientY - rect.top;
 });
-window.addEventListener('mousedown', () => { if(inBoss) bossAction(); });
+
+window.addEventListener('mousedown', e => { if (inBoss) bossAction(e); });
+window.addEventListener('touchstart', e => { if (inBoss) { e.preventDefault(); bossAction(e); } }, { passive: false });
+
 window.addEventListener('mouseup', () => {
     if (inBoss && currentBoss === 'SURGE' && surgeHeld) {
         surgeHeld = false;
+        sfxSurgeStop();
         let diff = Math.abs((surgeAngle % 360) - (surgeTarget % 360));
         if (diff > 180) diff = 360 - diff;
-        exitBoss(diff < 20);
+        const tol = buffs.bossEasy ? 32 : 20;
+        const success = diff < tol;
+        if (success) sfxSurgeHit(); else sfxBossFail();
+        exitBoss(success);
     }
 });
 
-// FIX: Gestione Backspace e limite caratteri
 window.addEventListener('keydown', e => {
     if (!running || inBoss) return;
-    
-    // Gestione Backspace
+
     if (e.key === 'Backspace') {
+        if (input.length > 0) sfxWrong();
         input = input.slice(0, -1);
         document.getElementById('input-preview').innerText = input;
+        streak = 0;
+        comboCount = 0; updateCombo();
         return;
     }
 
     const k = e.key.toUpperCase();
-    if ("0123456789ABCDEF".includes(k)) {
-        // Limite a 4 caratteri
+    if ('0123456789ABCDEF'.includes(k) && k.length === 1) {
         if (input.length < 4) {
-            input += k; 
+            input += k;
+            sfxKeyPress();
             document.getElementById('input-preview').innerText = input;
             if (input === hex) {
-                heat = Math.max(0, heat - 35);
+                sfxCodeCorrect();
+                heat = Math.max(0, heat - getHeatCooldown());
                 codesSolved++;
+                totalSolved++;
+                streak++;
+                comboCount++;
+                updateCombo();
+                // Spawn particles at hex display center
+                const rect = document.getElementById('hex-display').getBoundingClientRect();
+                const pRect= pCanvas.getBoundingClientRect();
+                spawnParticles(rect.left - pRect.left + rect.width/2, rect.top - pRect.top + rect.height/2, 'rgba(0,255,65,1)', 18 + getComboMult() * 6);
                 document.getElementById('sync-info').innerText = `SYNC: ${codesSolved}/3`;
+                checkObjectives();
                 if (codesSolved >= 3) triggerBoss();
                 else genHex();
             }
@@ -337,114 +1485,66 @@ window.addEventListener('keydown', e => {
     }
 });
 
-// --- VECCHIA CARD ESTETICA ADATTATA ---
-
+// ═══════════════════════════════════
+//  INSTAGRAM CARD
+// ═══════════════════════════════════
 function genInstaCard() {
-
     const iCanvas = document.getElementById('instaCanvas');
-
     const iCtx = iCanvas.getContext('2d');
-
-    
-
-    // Background con gradiente
-
     const grad = iCtx.createRadialGradient(540, 960, 100, 540, 960, 1200);
-
     grad.addColorStop(0, '#1a1a1a'); grad.addColorStop(1, '#050505');
-
     iCtx.fillStyle = grad; iCtx.fillRect(0, 0, 1080, 1920);
-
-    
-
-    // Linee curve decorative
-
     iCtx.strokeStyle = 'rgba(227, 218, 201, 0.03)';
-
     for(let i=0; i<1080; i+=60) {
-
         iCtx.beginPath(); iCtx.moveTo(i, 0);
-
         iCtx.bezierCurveTo(i+50, 600, i-50, 1200, i, 1920); iCtx.stroke();
-
     }
-
-    
-
-    // Bordo
-
     iCtx.strokeStyle = '#808080'; iCtx.lineWidth = 2; iCtx.strokeRect(50, 50, 980, 1820);
-
-    
-
-    // Titoli
-
     iCtx.fillStyle = '#E3DAC9'; iCtx.font = 'bold 90px Arial'; iCtx.fillText('VOIDLINK', 100, 200);
-
     iCtx.fillStyle = '#00FF41'; iCtx.font = '22px Courier New'; iCtx.fillText('STABILITY TEST // OBLIVION PROTOCOL // 2026', 100, 250);
-
-    
-
-    // Box Tempo
-
-    iCtx.fillStyle = 'rgba(255, 255, 255, 0.02)'; iCtx.fillRect(100, 380, 880, 550);
-
-    iCtx.strokeStyle = 'rgba(227, 218, 201, 0.1)'; iCtx.strokeRect(100, 380, 880, 550);
-
+    iCtx.fillStyle = 'rgba(255,255,255,0.02)'; iCtx.fillRect(100, 380, 880, 550);
+    iCtx.strokeStyle = 'rgba(227,218,201,0.1)'; iCtx.strokeRect(100, 380, 880, 550);
     iCtx.fillStyle = '#808080'; iCtx.font = 'bold 35px Arial'; iCtx.fillText('CORE_UPTIME', 150, 470);
-
-    
-
     iCtx.fillStyle = '#FFF'; iCtx.font = '900 280px Arial';
-
     const sVal = time.toFixed(1); iCtx.fillText(sVal, 150, 780);
-
     const offX = iCtx.measureText(sVal).width;
-
     iCtx.font = '100px Arial'; iCtx.fillText('s', 160 + offX, 780);
-
-    
-
-    // Dati Sessione
-
     const drawData = (l, v, y) => {
-
-        iCtx.fillStyle = 'rgba(227, 218, 201, 0.5)'; iCtx.font = '20px Courier New'; iCtx.fillText(l, 100, y);
-
+        iCtx.fillStyle = 'rgba(227,218,201,0.5)'; iCtx.font = '20px Courier New'; iCtx.fillText(l, 100, y);
         iCtx.fillStyle = '#E3DAC9'; iCtx.font = 'bold 50px Arial'; iCtx.fillText(v, 100, y + 60);
-
     };
-
     drawData('PILOTS', playerName.toUpperCase(), 1050);
-
     drawData('BOSS_CLEARED', bossCleared.toString().padStart(3, '0'), 1250);
-
     drawData('TOTAL_SESSIONS', attempts.toString().padStart(3, '0'), 1450);
-
-    
-
-    // Radar Decor
-
-    iCtx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
-
+    iCtx.strokeStyle = 'rgba(128,128,128,0.5)';
     iCtx.beginPath(); iCtx.arc(850, 1350, 120, 0, Math.PI*2); iCtx.stroke();
-
     iCtx.moveTo(850, 1230); iCtx.lineTo(850, 1470); iCtx.moveTo(730, 1350); iCtx.lineTo(970, 1350); iCtx.stroke();
-
-
-
-    // Footer
-
     iCtx.fillStyle = '#00FF41'; iCtx.font = 'bold 60px Arial'; iCtx.fillText('@VOIDLINK', 100, 1750);
-
-    
-
-    const link = document.createElement('a'); link.download = `VoidLink_Card.png`;
-
+    const link = document.createElement('a'); link.download = 'VoidLink_Card.png';
     link.href = iCanvas.toDataURL('image/png'); link.click();
-
 }
 
+// ── Share on X ──
+function shareOnX() {
+    const GAME_URL = 'https://voidlink.itch.io/voidlink-oblivion-station';
+    const bossText   = bossCleared > 0 ? ` ${bossCleared} boss${bossCleared > 1 ? 'es' : ''} cleared.` : '';
+    const bestText   = bestTime > 0 ? ` PB: ${bestTime.toFixed(1)}s.` : '';
+    const streakText = streak > 2 ? ` ${streak}x streak.` : '';
+    const text = `🕹 VOIDLINK // OBLIVION_STATION\n⏱ ${time.toFixed(1)}s uptime — ${totalSolved} codes solved.${bossText}${streakText}${bestText}\nCan you beat us? 👉 ${GAME_URL}\n@VoidLink #VoidLink #OblivionStation`;
+    const url  = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+// ── Share on WhatsApp ──
+function shareOnWhatsApp() {
+    const GAME_URL = 'https://voidlink.itch.io/voidlink-oblivion-station';
+    const bossText   = bossCleared > 0 ? ` ${bossCleared} boss eliminati.` : '';
+    const bestText   = bestTime > 0 ? ` Record: ${bestTime.toFixed(1)}s.` : '';
+    const streakText = streak > 2 ? ` Streak: ${streak}x.` : '';
+    const text = `🎮 *VOIDLINK // OBLIVION_STATION*\n⏱️ ${time.toFixed(1)}s di uptime — ${totalSolved} codici risolti.${bossText}${streakText}${bestText}\nRiesci a batterci? 👇\n${GAME_URL}`;
+    const url  = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
 </script>
 </body>
 </html>
