@@ -42,7 +42,7 @@
         #boss-label { font-size: 10px; letter-spacing: 5px; margin-bottom: 8px; }
         #boss-sub { font-size: 8px; color: var(--beige); opacity: 0.35; letter-spacing: 2px; margin-top: 10px; }
         
-        #surge-hint { font-size: 10px; letter-spacing: 3px; opacity: 0.6; margin-bottom: 16px; position: absolute; bottom: 60px; }
+        #surge-hint { font-size: 10px; letter-spacing: 3px; opacity: 0.6; margin-bottom: 16px; position: absolute; bottom: 60px; color: var(--green); }
     </style>
 </head>
 <body>
@@ -62,6 +62,7 @@
             <button class="btn" onclick="start()">START SESSION</button>
             <button id="share-insta" class="btn" style="display:none;border-color:var(--slate);" onclick="genInstaCard()">GENERATE CARD</button>
         </div>
+        <p style="font-size: 9px; color: var(--green); margin-top: 40px; opacity: 0.6; letter-spacing: 2px;">DESIGNED FOR THE FUTURE @VoidLink</p>
     </div>
 
     <div class="header">
@@ -188,7 +189,7 @@ function loop() {
         document.getElementById('ui-frame').classList.remove('warning');
     }
 
-    ctx.beginPath(); ctx.strokeStyle = '#E3DAC9'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.strokeStyle = "#E3DAC9"; ctx.lineWidth = 2;
     for (let x = 0; x < canvas.width; x += 10) {
         let y = waveY + Math.sin(x * 0.02 + time * 4) * 15;
         x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
@@ -210,6 +211,7 @@ function triggerBoss() {
     document.getElementById('boss-label').style.color = BOSS_COLOR[currentBoss];
     document.getElementById('boss-badge').style.display = 'block';
     document.getElementById('boss-badge').innerText = currentBoss + '_SEQUENCE';
+    document.getElementById('boss-badge').style.color = BOSS_COLOR[currentBoss];
 
     if (currentBoss === 'OBLIVION') {
         rings = [new Ring(0), new Ring(1), new Ring(2), new Ring(3)];
@@ -297,7 +299,6 @@ window.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
     mouseY = e.clientY - rect.top;
 });
-
 window.addEventListener('mousedown', () => { if(inBoss) bossAction(); });
 window.addEventListener('mouseup', () => {
     if (inBoss && currentBoss === 'SURGE' && surgeHeld) {
@@ -308,17 +309,30 @@ window.addEventListener('mouseup', () => {
     }
 });
 
+// FIX: Gestione Backspace e limite caratteri
 window.addEventListener('keydown', e => {
     if (!running || inBoss) return;
+    
+    // Gestione Backspace
+    if (e.key === 'Backspace') {
+        input = input.slice(0, -1);
+        document.getElementById('input-preview').innerText = input;
+        return;
+    }
+
     const k = e.key.toUpperCase();
     if ("0123456789ABCDEF".includes(k)) {
-        input += k; document.getElementById('input-preview').innerText = input;
-        if (input === hex) {
-            heat = Math.max(0, heat - 35);
-            codesSolved++;
-            document.getElementById('sync-info').innerText = `SYNC: ${codesSolved}/3`;
-            if (codesSolved >= 3) triggerBoss();
-            else genHex();
+        // Limite a 4 caratteri
+        if (input.length < 4) {
+            input += k; 
+            document.getElementById('input-preview').innerText = input;
+            if (input === hex) {
+                heat = Math.max(0, heat - 35);
+                codesSolved++;
+                document.getElementById('sync-info').innerText = `SYNC: ${codesSolved}/3`;
+                if (codesSolved >= 3) triggerBoss();
+                else genHex();
+            }
         }
     }
 });
@@ -327,53 +341,35 @@ window.addEventListener('keydown', e => {
 function genInstaCard() {
     const iCanvas = document.getElementById('instaCanvas');
     const iCtx = iCanvas.getContext('2d');
-    
-    // Background con gradiente
     const grad = iCtx.createRadialGradient(540, 960, 100, 540, 960, 1200);
     grad.addColorStop(0, '#1a1a1a'); grad.addColorStop(1, '#050505');
     iCtx.fillStyle = grad; iCtx.fillRect(0, 0, 1080, 1920);
-    
-    // Linee curve decorative
-    iCtx.strokeStyle = 'rgba(227, 218, 201, 0.03)';
+    iCtx.strokeStyle = 'rgba(0, 255, 65, 0.05)';
     for(let i=0; i<1080; i+=60) {
         iCtx.beginPath(); iCtx.moveTo(i, 0);
         iCtx.bezierCurveTo(i+50, 600, i-50, 1200, i, 1920); iCtx.stroke();
     }
-    
-    // Bordo
-    iCtx.strokeStyle = '#808080'; iCtx.lineWidth = 2; iCtx.strokeRect(50, 50, 980, 1820);
-    
-    // Titoli
-    iCtx.fillStyle = '#E3DAC9'; iCtx.font = 'bold 90px Arial'; iCtx.fillText('VOIDLINK', 100, 200);
+    iCtx.strokeStyle = '#00FF41'; iCtx.lineWidth = 2; iCtx.strokeRect(50, 50, 980, 1820);
+    iCtx.fillStyle = '#00FF41'; iCtx.font = 'bold 90px Arial'; iCtx.fillText('VOIDLINK', 100, 200);
     iCtx.fillStyle = '#00FF41'; iCtx.font = '22px Courier New'; iCtx.fillText('STABILITY TEST // OBLIVION PROTOCOL // 2026', 100, 250);
-    
-    // Box Tempo
-    iCtx.fillStyle = 'rgba(255, 255, 255, 0.02)'; iCtx.fillRect(100, 380, 880, 550);
-    iCtx.strokeStyle = 'rgba(227, 218, 201, 0.1)'; iCtx.strokeRect(100, 380, 880, 550);
+    iCtx.fillStyle = 'rgba(0, 255, 65, 0.02)'; iCtx.fillRect(100, 380, 880, 550);
+    iCtx.strokeStyle = 'rgba(0, 255, 65, 0.2)'; iCtx.strokeRect(100, 380, 880, 550);
     iCtx.fillStyle = '#808080'; iCtx.font = 'bold 35px Arial'; iCtx.fillText('CORE_UPTIME', 150, 470);
-    
-    iCtx.fillStyle = '#FFF'; iCtx.font = '900 280px Arial';
+    iCtx.fillStyle = '#00FF41'; iCtx.font = '900 280px Arial';
     const sVal = time.toFixed(1); iCtx.fillText(sVal, 150, 780);
     const offX = iCtx.measureText(sVal).width;
     iCtx.font = '100px Arial'; iCtx.fillText('s', 160 + offX, 780);
-    
-    // Dati Sessione
     const drawData = (l, v, y) => {
-        iCtx.fillStyle = 'rgba(227, 218, 201, 0.5)'; iCtx.font = '20px Courier New'; iCtx.fillText(l, 100, y);
-        iCtx.fillStyle = '#E3DAC9'; iCtx.font = 'bold 50px Arial'; iCtx.fillText(v, 100, y + 60);
+        iCtx.fillStyle = 'rgba(0, 255, 65, 0.5)'; iCtx.font = '20px Courier New'; iCtx.fillText(l, 100, y);
+        iCtx.fillStyle = '#00FF41'; iCtx.font = 'bold 50px Arial'; iCtx.fillText(v, 100, y + 60);
     };
     drawData('PILOTS', playerName.toUpperCase(), 1050);
     drawData('BOSS_CLEARED', bossCleared.toString().padStart(3, '0'), 1250);
     drawData('TOTAL_SESSIONS', attempts.toString().padStart(3, '0'), 1450);
-    
-    // Radar Decor
-    iCtx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
+    iCtx.strokeStyle = 'rgba(0, 255, 65, 0.3)';
     iCtx.beginPath(); iCtx.arc(850, 1350, 120, 0, Math.PI*2); iCtx.stroke();
     iCtx.moveTo(850, 1230); iCtx.lineTo(850, 1470); iCtx.moveTo(730, 1350); iCtx.lineTo(970, 1350); iCtx.stroke();
-
-    // Footer
     iCtx.fillStyle = '#00FF41'; iCtx.font = 'bold 60px Arial'; iCtx.fillText('@VOIDLINK', 100, 1750);
-    
     const link = document.createElement('a'); link.download = `VoidLink_Card.png`;
     link.href = iCanvas.toDataURL('image/png'); link.click();
 }
