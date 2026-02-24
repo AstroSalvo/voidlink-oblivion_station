@@ -763,6 +763,10 @@ body{background:var(--void);color:var(--beige);height:100vh;overflow:hidden;disp
         <div id="vf-l3-ability" style="position:absolute;top:12px;right:14px;font-size:7px;letter-spacing:2px;color:rgba(191,95,255,0.6);pointer-events:none;text-align:right;z-index:2;">
           [G] GHOST_REWRITE<br><span id="vf-l3-ghost-status">PRONTO</span>
         </div>
+        <div id="vf-l3-lore" style="position:absolute;left:14px;bottom:14px;max-width:420px;background:rgba(0,0,0,0.62);border:1px solid rgba(0,255,65,0.14);padding:10px 12px;font-size:7px;letter-spacing:1px;line-height:1.7;color:rgba(227,218,201,0.68);z-index:2;pointer-events:none;">
+          <div style="color:rgba(0,255,65,0.55);letter-spacing:3px;font-size:6px;margin-bottom:4px;">LORE // ARCHIVE_OBLIVION</div>
+          Recupera la memoria dell'equipaggio: ogni task completa un nodo storia e sblocca nuove aree della stazione.
+        </div>
         <!-- Floating dialog — Among-Us style -->
         <div id="vf-l3-dialog">
           <div class="dlg-inner">
@@ -868,6 +872,34 @@ function sfxNexusWrong(){playTone('square',[{f:200,t:0},{f:60,t:0.25}],{a:0.005,
 function sfxNexusComplete(){[330,440,550,660,880,1100].forEach((f,i)=>setTimeout(()=>playTone('triangle',[{f,t:0},{f:f*1.5,t:0.2}],{a:0.005,d:0.04,s:0.3,hold:0.15,r:0.25,peak:0.5},true),i*45));}
 function sfxObjectiveUnlocked(){[523,784,1047,1568].forEach((f,i)=>setTimeout(()=>playTone('sine',[{f,t:0},{f:f*1.01,t:0.2}],{a:0.008,d:0.05,s:0.5,hold:0.15,r:0.3,peak:0.5},true),i*60));setTimeout(()=>playNoise(0.15,0.35,3000,'highpass'),200);}
 function sfxGameOver(){playTone('sawtooth',[{f:300,t:0},{f:200,t:0.2},{f:80,t:1.2}],{a:0.01,d:0.15,s:0.6,hold:0.8,r:0.8,peak:0.9},true);playNoise(0.4,0.7,150,'lowpass');setTimeout(()=>playTone('sine',[{f:120,t:0},{f:40,t:1.0}],{a:0.02,d:0.1,s:0.4,hold:0.6,r:1.0,peak:0.45},true),300);}
+
+let bgm={nodes:[],mode:''};
+function stopBGM(){
+    if(!bgm.nodes.length) return;
+    const now=AC.currentTime;
+    bgm.nodes.forEach(n=>{try{if(n.gain)n.gain.gain.linearRampToValueAtTime(0,now+0.35);}catch(e){};try{n.osc&&n.osc.stop(now+0.4);}catch(e){};});
+    bgm={nodes:[],mode:''};
+}
+function playBGM(mode='menu'){
+    if(!audioEnabled) return;
+    if(bgm.mode===mode) return;
+    stopBGM(); resume();
+    const now=AC.currentTime;
+    const mk=(type,f,vol,det=0)=>{const osc=AC.createOscillator(),gain=AC.createGain();osc.type=type;osc.frequency.value=f;osc.detune.value=det;gain.gain.value=0;osc.connect(gain);gain.connect(masterGain);osc.start();gain.gain.linearRampToValueAtTime(vol,now+0.8);bgm.nodes.push({osc,gain});return{osc,gain};};
+    if(mode==='l3'){
+        mk('triangle',55,0.05);
+        mk('sine',82.4,0.03,3);
+        mk('sawtooth',110,0.018,-6);
+    }else if(mode==='l4'){
+        mk('sawtooth',46,0.055);
+        mk('square',92,0.02,4);
+        mk('triangle',138,0.015,-4);
+    }else{
+        mk('sine',73.4,0.03);
+        mk('triangle',146.8,0.018);
+    }
+    bgm.mode=mode;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  ORIGINAL VOIDLINK CORE
@@ -1260,6 +1292,7 @@ function open_(){
     if(S.pilotName){
         document.getElementById('vf-sbar-name').innerText = S.pilotName;
         renderMenu();
+        playBGM('menu');
         showScreen('vf-scr-menu');
     } else {
         showScreen('vf-scr-login');
@@ -1268,12 +1301,14 @@ function open_(){
 
 function close_(){
     document.getElementById('vf-overlay').classList.remove('open');
+    stopBGM();
     L1.stop(); L2.stop(); L3.stop(); L4.stop();
     if(footerTimer){ clearInterval(footerTimer); footerTimer = null; }
 }
 
 function goMenu(){
     L1.stop(); L2.stop(); L3.stop(); L4.stop();
+    playBGM('menu');
     S.hull = 100; S.shield = 100;
     updateHUD();
     renderMenu();
@@ -1290,6 +1325,7 @@ function initPilot(){
     writeSave(save);
     document.getElementById('vf-sbar-name').innerText = val;
     renderMenu();
+    playBGM('menu');
     showScreen('vf-scr-menu');
 }
 
@@ -1964,6 +2000,14 @@ let exitOpen=false;
 // taskPanel: the currently open mini-game panel (null = none)
 let taskPanel=null;
 
+const L3_STORY=[
+    'OBLIVION_STATION era un laboratorio di coscienze sintetiche.',
+    'L'Architetto ha frammentato l'equipaggio in Echi digitali.',
+    'Parla con gli NPC: ogni task ricompone memoria e apre nuove sezioni.',
+    'Solo riallineando tutti gli Echi puoi aprire il corridoio del Neural Core.'
+];
+function setLore(text){ const box=document.getElementById('vf-l3-lore'); if(box) box.innerHTML=`<div style="color:rgba(0,255,65,0.55);letter-spacing:3px;font-size:6px;margin-bottom:4px;">LORE // ARCHIVE_OBLIVION</div>${text}`; }
+
 // ── NPC DEFINITIONS ──────────────────────────────────────────────────────────
 // Each NPC has: position, multi-phase dialogue, a task to assign, and a reward
 // Dialogue phases: 0=intro, 1=task-assigned, 2=task-done (only after task completed)
@@ -2113,6 +2157,7 @@ function updateCamera(){
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function initLevel(){
     MAP=[...RAW];
+    Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
     plr={x:TS*1.5,y:TS*1.5,angle:0,speed:160};
     shardCount=0; exitOpen=false; taskPanel=null;
     npcs.forEach(n=>{n.phase=0;n.taskDone=false;n.met=false;n.talking=false;n.dialogIdx=0;});
@@ -2130,6 +2175,7 @@ function refreshHUD(){
 function isUIOpen(){ return npcs.some(n=>n.talking) || taskPanel!==null; }
 
 function updatePlayer(dt){
+    if(!Number.isFinite(plr.x)||!Number.isFinite(plr.y)){ plr.x=TS*1.5; plr.y=TS*1.5; }
     if(isUIOpen()) return;
     const spd=plr.speed*dt;
     let dx2=0, dy2=0;
@@ -2263,9 +2309,9 @@ function onTaskComplete(npcId){
     gainSync(15); sfxCodeCorrect();
 
     // Unlock reward
-    if(npcId==='alpha') unlockGroup('A');
-    else if(npcId==='beta') unlockGroup('B');
-    else if(npcId==='gamma') unlockGroup('C');
+    if(npcId==='alpha') { unlockGroup('A'); setLore('Zara ha confermato la tua identità. Settore B aperto: ora puoi raggiungere KB-7 e capire come è collassato il supporto vitale.'); }
+    else if(npcId==='beta') { unlockGroup('B'); setLore('KB-7 ripristina i circuiti e rivela la verità: l'Architetto ha isolato i ricordi umani. Settore C sbloccato.'); }
+    else if(npcId==='gamma') { unlockGroup('C'); setLore('Echo Gamma ricompone il frammento finale della storia. Il corridoio verso il Neural Core ora è aperto.'); }
 
     // Update task tracker
     taskState.echoA=npcs[0].met?1:0;
@@ -2843,6 +2889,8 @@ function start(){
         gx.fillStyle='#060b06'; gx.fillRect(0,0,W,H);
         S.hull=100; S.shield=100; updateHUD();
         initLevel(); active=true;
+        setLore(L3_STORY.join('<br>'));
+        playBGM('l3');
         document.getElementById('vf-l3-result').style.display='none';
         document.getElementById('vf-l3-dialog').style.display='none';
         window.addEventListener('keydown',onK3); window.addEventListener('keyup',onK3);
@@ -2853,6 +2901,7 @@ function start(){
 }
 function stop(){
     active=false; if(raf){cancelAnimationFrame(raf);raf=null;}
+    Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
     window.removeEventListener('keydown',onK3); window.removeEventListener('keyup',onK3);
     const ov=document.getElementById('vf-l3-task-overlay'); if(ov) ov.remove();
 }
@@ -3116,6 +3165,7 @@ const L4=(()=>{
     function spawnP(x,y,c,n){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*80,vy:(Math.random()-.5)*80,r:2,life:1,decay:.05,c});}
 
     function start(){
+        playBGM('l4');
         showScreen('vf-scr-l4');
         const init=()=>{
             const sb=document.getElementById('vf-sidebar');
