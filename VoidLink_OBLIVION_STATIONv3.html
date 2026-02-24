@@ -1995,6 +1995,8 @@ const KEYS={};
 let camX=0, camY=0;
 let l3SpawnGuard=0; // short lock to avoid startup input carry-over launches
 let l3SpawnAnchor={x:TS*1.5,y:TS*1.5};
+let l3InputArmed=false;
+let l3StartMs=0;
 
 // ── DATA-SHARDS (collectibles that satisfy Zara's task) ───────────────────────
 let shards=[
@@ -2165,9 +2167,12 @@ function unlockGroup(gk){
 
 // ── CAMERA ────────────────────────────────────────────────────────────────────
 function updateCamera(){
-    const viewW=W/L3_ZOOM, viewH=H/L3_ZOOM;
+    const safeW=Math.max(1,Number.isFinite(W)?W:800), safeH=Math.max(1,Number.isFinite(H)?H:600);
+    const viewW=safeW/L3_ZOOM, viewH=safeH/L3_ZOOM;
     camX=Math.max(0,Math.min(COLS*TS-viewW,plr.x-viewW/2));
     camY=Math.max(0,Math.min(ROWS*TS-viewH,plr.y-viewH/2));
+    if(!Number.isFinite(camX)) camX=0;
+    if(!Number.isFinite(camY)) camY=0;
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -2177,6 +2182,8 @@ function initLevel(){
     plr={x:TS*1.5,y:TS*1.5,angle:0,speed:160};
     l3SpawnAnchor={x:plr.x,y:plr.y};
     l3SpawnGuard=0.9;
+    l3InputArmed=false;
+    l3StartMs=performance.now();
     mx=W*0.5; my=H*0.5;
     shardCount=0; exitOpen=false; taskPanel=null;
     npcs.forEach(n=>{n.phase=0;n.taskDone=false;n.met=false;n.talking=false;n.dialogIdx=0;});
@@ -2197,6 +2204,7 @@ function updatePlayer(dt){
     if(!Number.isFinite(dt)||dt<=0) return;
     if(!Number.isFinite(plr.x)||!Number.isFinite(plr.y)){ plr.x=TS*1.5; plr.y=TS*1.5; }
     if(plr.x<TS*0.55||plr.x>COLS*TS-TS*0.55||plr.y<TS*0.55||plr.y>ROWS*TS-TS*0.55){ plr.x=TS*1.5; plr.y=TS*1.5; }
+    if(isBlocked(plr.x,plr.y)){ plr.x=l3SpawnAnchor.x; plr.y=l3SpawnAnchor.y; }
     if(l3SpawnGuard>0){
         l3SpawnGuard=Math.max(0,l3SpawnGuard-dt);
         Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
@@ -2208,10 +2216,12 @@ function updatePlayer(dt){
     if(isUIOpen()) return;
     const spd=plr.speed*dt;
     let dx2=0, dy2=0;
-    if(KEYS['w']||KEYS['W']||KEYS['ArrowUp'])    dy2-=spd;
-    if(KEYS['s']||KEYS['S']||KEYS['ArrowDown'])  dy2+=spd;
-    if(KEYS['a']||KEYS['A']||KEYS['ArrowLeft'])  dx2-=spd;
-    if(KEYS['d']||KEYS['D']||KEYS['ArrowRight']) dx2+=spd;
+    if(l3InputArmed){
+        if(KEYS['w']||KEYS['W']||KEYS['ArrowUp'])    dy2-=spd;
+        if(KEYS['s']||KEYS['S']||KEYS['ArrowDown'])  dy2+=spd;
+        if(KEYS['a']||KEYS['A']||KEYS['ArrowLeft'])  dx2-=spd;
+        if(KEYS['d']||KEYS['D']||KEYS['ArrowRight']) dx2+=spd;
+    }
     const psx=(plr.x-camX)*L3_ZOOM, psy=(plr.y-camY)*L3_ZOOM;
     plr.angle=Math.atan2(my-psy, mx-psx);
     const nx=plr.x+dx2, ny=plr.y+dy2;
@@ -2885,6 +2895,9 @@ function drawScene(){
 // ── INPUT ─────────────────────────────────────────────────────────────────────
 function onK3(e){
     if(!active) return;
+    if(e.type==='keydown' && !l3InputArmed && (performance.now()-l3StartMs)>300){
+        l3InputArmed=true;
+    }
     KEYS[e.key]=(e.type==='keydown');
     if(e.type==='keydown' && (e.key==='e'||e.key==='E')) tryInteract();
     if(e.type==='keydown' && e.key==='Escape') { closeTask(); closeDlg(); }
