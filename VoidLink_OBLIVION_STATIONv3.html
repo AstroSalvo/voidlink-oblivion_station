@@ -1910,6 +1910,7 @@ let mx=400, my=300;
 // ── MAP ──────────────────────────────────────────────────────────────────────
 // 0=floor 1=wall 2=locked-door
 const TS=72, COLS=22, ROWS=14;
+const L3_ZOOM=1.45; // camera zoom focused on player
 //prettier-ignore
 const RAW=[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -2104,8 +2105,9 @@ function unlockGroup(gk){
 
 // ── CAMERA ────────────────────────────────────────────────────────────────────
 function updateCamera(){
-    camX=Math.max(0,Math.min(COLS*TS-W,plr.x-W/2));
-    camY=Math.max(0,Math.min(ROWS*TS-H,plr.y-H/2));
+    const viewW=W/L3_ZOOM, viewH=H/L3_ZOOM;
+    camX=Math.max(0,Math.min(COLS*TS-viewW,plr.x-viewW/2));
+    camY=Math.max(0,Math.min(ROWS*TS-viewH,plr.y-viewH/2));
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -2135,7 +2137,8 @@ function updatePlayer(dt){
     if(KEYS['s']||KEYS['S']||KEYS['ArrowDown'])  dy2+=spd;
     if(KEYS['a']||KEYS['A']||KEYS['ArrowLeft'])  dx2-=spd;
     if(KEYS['d']||KEYS['D']||KEYS['ArrowRight']) dx2+=spd;
-    plr.angle=Math.atan2(my-(plr.y-camY), mx-(plr.x-camX));
+    const psx=(plr.x-camX)*L3_ZOOM, psy=(plr.y-camY)*L3_ZOOM;
+    plr.angle=Math.atan2(my-psy, mx-psx);
     const nx=plr.x+dx2, ny=plr.y+dy2;
     if(!isBlocked(nx,plr.y)) plr.x=nx;
     if(!isBlocked(plr.x,ny)) plr.y=ny;
@@ -2648,6 +2651,7 @@ function endL3(){
 function drawScene(){
     gx.clearRect(0,0,W,H);
     gx.save();
+    gx.scale(L3_ZOOM,L3_ZOOM);
     gx.translate(-camX,-camY);
 
     // Tiles
@@ -2753,26 +2757,26 @@ function drawScene(){
     gx.restore(); // pop camera
 
     // ── DARK OVERLAY + FLASHLIGHT ──────────────────────────────────────────────
-    const psx=plr.x-camX, psy=plr.y-camY;
+    const psx=(plr.x-camX)*L3_ZOOM, psy=(plr.y-camY)*L3_ZOOM;
     dx.clearRect(0,0,W,H);
-    dx.fillStyle='rgba(0,0,0,0.88)'; dx.fillRect(0,0,W,H);
+    dx.fillStyle='rgba(0,0,0,0.95)'; dx.fillRect(0,0,W,H);
     dx.save(); dx.globalCompositeOperation='destination-out';
     const fa=Math.atan2(my-psy, mx-psx);
-    const fgrad=dx.createRadialGradient(psx,psy,0,psx,psy,230);
+    const fgrad=dx.createRadialGradient(psx,psy,0,psx,psy,170);
     fgrad.addColorStop(0,'rgba(0,0,0,1)');
-    fgrad.addColorStop(0.5,'rgba(0,0,0,0.8)');
+    fgrad.addColorStop(0.45,'rgba(0,0,0,0.72)');
     fgrad.addColorStop(1,'rgba(0,0,0,0)');
     dx.fillStyle=fgrad;
-    dx.beginPath(); dx.moveTo(psx,psy); dx.arc(psx,psy,230,fa-0.55,fa+0.55); dx.closePath(); dx.fill();
-    // Ambient
-    const ambg=dx.createRadialGradient(psx,psy,0,psx,psy,45);
-    ambg.addColorStop(0,'rgba(0,0,0,0.55)'); ambg.addColorStop(1,'rgba(0,0,0,0)');
-    dx.fillStyle=ambg; dx.beginPath(); dx.arc(psx,psy,45,0,Math.PI*2); dx.fill();
+    dx.beginPath(); dx.moveTo(psx,psy); dx.arc(psx,psy,170,fa-0.45,fa+0.45); dx.closePath(); dx.fill();
+    // Ambient glow close to the pawn
+    const ambg=dx.createRadialGradient(psx,psy,0,psx,psy,55);
+    ambg.addColorStop(0,'rgba(0,0,0,0.45)'); ambg.addColorStop(1,'rgba(0,0,0,0)');
+    dx.fillStyle=ambg; dx.beginPath(); dx.arc(psx,psy,55,0,Math.PI*2); dx.fill();
     dx.restore();
 
     // ── MINIMAP ───────────────────────────────────────────────────────────────
-    const mW=96,mH=60,mX=W-mW-10,mY=10,cw=mW/COLS,rh2=mH/ROWS;
-    dx.fillStyle='rgba(0,0,0,0.75)'; dx.fillRect(mX,mY,mW,mH);
+    const mW=120,mH=74,mX=W-mW-10,mY=10,cw=mW/COLS,rh2=mH/ROWS;
+    dx.fillStyle='rgba(0,0,0,0.82)'; dx.fillRect(mX,mY,mW,mH);
     dx.strokeStyle='rgba(0,255,65,0.14)'; dx.lineWidth=1; dx.strokeRect(mX,mY,mW,mH);
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
         if(tileAt(c,r)===1){ dx.fillStyle='rgba(0,255,65,0.14)'; dx.fillRect(mX+c*cw,mY+r*rh2,cw,rh2); }
@@ -2784,7 +2788,14 @@ function drawScene(){
     }
     npcs.forEach(n=>{ dx.fillStyle=n.color; dx.beginPath(); dx.arc(mX+n.cx*cw,mY+n.cy*rh2,2.5,0,Math.PI*2); dx.fill(); });
     if(exitOpen){ dx.fillStyle='rgba(191,95,255,0.8)'; dx.beginPath(); dx.arc(mX+EXIT.cx*cw,mY+EXIT.cy*rh2,3,0,Math.PI*2); dx.fill(); }
-    dx.fillStyle='#00FF41'; dx.beginPath(); dx.arc(mX+(plr.x/TS)*cw,mY+(plr.y/TS)*rh2,3,0,Math.PI*2); dx.fill();
+    const pMiniX=mX+(plr.x/TS)*cw, pMiniY=mY+(plr.y/TS)*rh2;
+    dx.fillStyle='#00FF41'; dx.beginPath(); dx.arc(pMiniX,pMiniY,3,0,Math.PI*2); dx.fill();
+    dx.strokeStyle='rgba(0,255,65,0.55)'; dx.lineWidth=1;
+    dx.beginPath(); dx.moveTo(pMiniX,pMiniY);
+    dx.lineTo(pMiniX+Math.cos(plr.angle)*8,pMiniY+Math.sin(plr.angle)*8);
+    dx.stroke();
+    dx.fillStyle='rgba(0,255,65,0.4)'; dx.font='6px monospace'; dx.textAlign='left';
+    dx.fillText('MINIMAPPA',mX+4,mY-2);
 
     // HUD: shard/task status (corner)
     dx.fillStyle='rgba(0,0,0,0.6)'; dx.fillRect(10,10,170,56);
@@ -2792,7 +2803,7 @@ function drawScene(){
     dx.fillStyle='rgba(0,255,65,0.35)'; dx.font='7px monospace'; dx.textAlign='left';
     dx.fillText(`SHARD: ${shardCount}/5  ECHI: ${npcs.filter(n=>n.met).length}/3`,18,26);
     dx.fillText(`TASK: ${npcs.filter(n=>n.taskDone).length}/3  ${exitOpen?'EXIT: APERTO':'EXIT: CHIUSO'}`,18,42);
-    dx.fillText(`[E] interagisci  WASD muovi`,18,56);
+    dx.fillText(`[E] parla/task  WASD muovi  task => nuove stanze`,18,56);
 }
 
 // ── INPUT ─────────────────────────────────────────────────────────────────────
