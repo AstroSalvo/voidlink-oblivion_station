@@ -1957,7 +1957,7 @@ let mx=400, my=300;
 // ── MAP ──────────────────────────────────────────────────────────────────────
 // 0=floor 1=wall 2=locked-door
 const TS=72, COLS=22, ROWS=14;
-const L3_ZOOM=1.45; // camera zoom focused on player
+const L3_ZOOM=1.62; // camera zoom focused on player
 //prettier-ignore
 const RAW=[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -2052,6 +2052,7 @@ let npcs=[
                     'Codice trasmesso. Il settore B è ora accessibile.',
                     'Trova KB-7 nell\'ala est. Era il nostro sistema di supporto vitale. Ora è... cambiato.',
                     'Porta con te almeno 3 Data-Shard. Servono come chiavi di autenticazione per KB-7.',
+                    'Ogni settore è collegato: task completato = nuova stanza utile alla successiva.',
                 ],
             },
         },
@@ -2086,6 +2087,7 @@ let npcs=[
                     'IL SETTORE C È ORA ACCESSIBILE.',
                     'ECHO GAMMA SI TROVA NELL\'ALA NORD-EST. ATTENZIONE: È INSTABILE.',
                     'RICHIEDE UN TEST DI PATTERN COGNITIVO PRIMA DI FIDARSI. BUONA FORTUNA.',
+                    'Senza il task di Gamma il corridoio finale resta sigillato.',
                 ],
             },
         },
@@ -2816,15 +2818,15 @@ function drawScene(){
     // ── DARK OVERLAY + FLASHLIGHT ──────────────────────────────────────────────
     const psx=(plr.x-camX)*L3_ZOOM, psy=(plr.y-camY)*L3_ZOOM;
     dx.clearRect(0,0,W,H);
-    dx.fillStyle='rgba(0,0,0,0.95)'; dx.fillRect(0,0,W,H);
+    dx.fillStyle='rgba(0,0,0,0.965)'; dx.fillRect(0,0,W,H);
     dx.save(); dx.globalCompositeOperation='destination-out';
     const fa=Math.atan2(my-psy, mx-psx);
-    const fgrad=dx.createRadialGradient(psx,psy,0,psx,psy,170);
+    const fgrad=dx.createRadialGradient(psx,psy,0,psx,psy,150);
     fgrad.addColorStop(0,'rgba(0,0,0,1)');
     fgrad.addColorStop(0.45,'rgba(0,0,0,0.72)');
     fgrad.addColorStop(1,'rgba(0,0,0,0)');
     dx.fillStyle=fgrad;
-    dx.beginPath(); dx.moveTo(psx,psy); dx.arc(psx,psy,170,fa-0.45,fa+0.45); dx.closePath(); dx.fill();
+    dx.beginPath(); dx.moveTo(psx,psy); dx.arc(psx,psy,150,fa-0.38,fa+0.38); dx.closePath(); dx.fill();
     // Ambient glow close to the pawn
     const ambg=dx.createRadialGradient(psx,psy,0,psx,psy,55);
     ambg.addColorStop(0,'rgba(0,0,0,0.45)'); ambg.addColorStop(1,'rgba(0,0,0,0)');
@@ -2852,7 +2854,7 @@ function drawScene(){
     dx.lineTo(pMiniX+Math.cos(plr.angle)*8,pMiniY+Math.sin(plr.angle)*8);
     dx.stroke();
     dx.fillStyle='rgba(0,255,65,0.4)'; dx.font='6px monospace'; dx.textAlign='left';
-    dx.fillText('MINIMAPPA',mX+4,mY-2);
+    dx.fillText('MINIMAPPA // TASK-LINK',mX+4,mY-2);
 
     // HUD: shard/task status (corner)
     dx.fillStyle='rgba(0,0,0,0.6)'; dx.fillRect(10,10,170,56);
@@ -2860,7 +2862,7 @@ function drawScene(){
     dx.fillStyle='rgba(0,255,65,0.35)'; dx.font='7px monospace'; dx.textAlign='left';
     dx.fillText(`SHARD: ${shardCount}/5  ECHI: ${npcs.filter(n=>n.met).length}/3`,18,26);
     dx.fillText(`TASK: ${npcs.filter(n=>n.taskDone).length}/3  ${exitOpen?'EXIT: APERTO':'EXIT: CHIUSO'}`,18,42);
-    dx.fillText(`[E] parla/task  WASD muovi  task => nuove stanze`,18,56);
+    dx.fillText(`[E] parla/task  WASD muovi  ogni task sblocca aree`,18,56);
 }
 
 // ── INPUT ─────────────────────────────────────────────────────────────────────
