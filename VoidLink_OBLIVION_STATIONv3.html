@@ -1994,6 +1994,7 @@ let plr={x:TS*1.5, y:TS*1.5, angle:0, speed:160};
 const KEYS={};
 let camX=0, camY=0;
 let l3SpawnGuard=0; // short lock to avoid startup input carry-over launches
+let l3SpawnAnchor={x:TS*1.5,y:TS*1.5};
 
 // ── DATA-SHARDS (collectibles that satisfy Zara's task) ───────────────────────
 let shards=[
@@ -2174,7 +2175,8 @@ function initLevel(){
     MAP=[...RAW];
     Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
     plr={x:TS*1.5,y:TS*1.5,angle:0,speed:160};
-    l3SpawnGuard=0.45;
+    l3SpawnAnchor={x:plr.x,y:plr.y};
+    l3SpawnGuard=0.9;
     mx=W*0.5; my=H*0.5;
     shardCount=0; exitOpen=false; taskPanel=null;
     npcs.forEach(n=>{n.phase=0;n.taskDone=false;n.met=false;n.talking=false;n.dialogIdx=0;});
@@ -2198,6 +2200,8 @@ function updatePlayer(dt){
     if(l3SpawnGuard>0){
         l3SpawnGuard=Math.max(0,l3SpawnGuard-dt);
         Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
+        plr.x=l3SpawnAnchor.x;
+        plr.y=l3SpawnAnchor.y;
         updateCamera();
         return;
     }
@@ -2253,6 +2257,7 @@ function tryInteract(){
 // ── NPC DIALOGUE SYSTEM ───────────────────────────────────────────────────────
 function openNPC(n){
     n.met=true; n.talking=true;
+    playTone('triangle',[{f:220,t:0},{f:330,t:0.2}],{a:0.02,d:0.1,s:0.25,hold:0.15,r:0.25,peak:0.08},true);
     const dlgSet=n.dialogues[n.phase];
     n.dialogIdx=0;
     showDlgLine(n, dlgSet);
