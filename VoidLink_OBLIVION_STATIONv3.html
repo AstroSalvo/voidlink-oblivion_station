@@ -1997,6 +1997,7 @@ let l3SpawnGuard=0; // short lock to avoid startup input carry-over launches
 let l3SpawnAnchor={x:TS*1.5,y:TS*1.5};
 let l3InputArmed=false;
 let l3StartMs=0;
+let l3LastSafe={x:TS*1.5,y:TS*1.5};
 
 // ── DATA-SHARDS (collectibles that satisfy Zara's task) ───────────────────────
 let shards=[
@@ -2156,6 +2157,26 @@ function isBlocked(px2,py2){
     }
     return false;
 }
+function findSafePointNear(px2,py2,maxRadius=6){
+    const baseC=Math.floor(px2/TS), baseR=Math.floor(py2/TS);
+    const centerX=(baseC+0.5)*TS, centerY=(baseR+0.5)*TS;
+    if(!isBlocked(centerX,centerY)) return {x:centerX,y:centerY};
+    for(let r=1;r<=maxRadius;r++){
+        for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
+            if(Math.abs(dx)!==r && Math.abs(dy)!==r) continue;
+            const c=baseC+dx, rr=baseR+dy;
+            const x=(c+0.5)*TS, y=(rr+0.5)*TS;
+            if(c<0||rr<0||c>=COLS||rr>=ROWS) continue;
+            if(!isBlocked(x,y)) return {x,y};
+        }
+    }
+    return {x:TS*1.5,y:TS*1.5};
+}
+function forceRecoverPlayer(){
+    const safe=findSafePointNear(plr.x,plr.y,8);
+    plr.x=safe.x; plr.y=safe.y;
+    l3LastSafe={x:safe.x,y:safe.y};
+}
 function unlockGroup(gk){
     if(unlockedGroups.has(gk)) return;
     unlockedGroups.add(gk);
@@ -2179,9 +2200,11 @@ function updateCamera(){
 function initLevel(){
     MAP=[...RAW];
     Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
-    plr={x:TS*1.5,y:TS*1.5,angle:0,speed:160};
-    l3SpawnAnchor={x:plr.x,y:plr.y};
-    l3SpawnGuard=0.9;
+    const spawn=findSafePointNear(TS*1.5,TS*1.5,8);
+    plr={x:spawn.x,y:spawn.y,angle:0,speed:160};
+    l3SpawnAnchor={x:spawn.x,y:spawn.y};
+    l3LastSafe={x:spawn.x,y:spawn.y};
+    l3SpawnGuard=1.25;
     l3InputArmed=false;
     l3StartMs=performance.now();
     mx=W*0.5; my=H*0.5;
@@ -2202,14 +2225,17 @@ function isUIOpen(){ return npcs.some(n=>n.talking) || taskPanel!==null; }
 
 function updatePlayer(dt){
     if(!Number.isFinite(dt)||dt<=0) return;
-    if(!Number.isFinite(plr.x)||!Number.isFinite(plr.y)){ plr.x=TS*1.5; plr.y=TS*1.5; }
-    if(plr.x<TS*0.55||plr.x>COLS*TS-TS*0.55||plr.y<TS*0.55||plr.y>ROWS*TS-TS*0.55){ plr.x=TS*1.5; plr.y=TS*1.5; }
-    if(isBlocked(plr.x,plr.y)){ plr.x=l3SpawnAnchor.x; plr.y=l3SpawnAnchor.y; }
+    if(!Number.isFinite(plr.x)||!Number.isFinite(plr.y)){ forceRecoverPlayer(); }
+    if(plr.x<TS*0.55||plr.x>COLS*TS-TS*0.55||plr.y<TS*0.55||plr.y>ROWS*TS-TS*0.55){ forceRecoverPlayer(); }
+    if(isBlocked(plr.x,plr.y)){ forceRecoverPlayer(); }
+    const maxStep=(plr.speed*Math.max(dt,0.016))*3.2;
+    if(Math.hypot(plr.x-l3LastSafe.x,plr.y-l3LastSafe.y)>maxStep){ forceRecoverPlayer(); }
     if(l3SpawnGuard>0){
         l3SpawnGuard=Math.max(0,l3SpawnGuard-dt);
         Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
         plr.x=l3SpawnAnchor.x;
         plr.y=l3SpawnAnchor.y;
+        l3LastSafe={x:l3SpawnAnchor.x,y:l3SpawnAnchor.y};
         updateCamera();
         return;
     }
@@ -2229,6 +2255,8 @@ function updatePlayer(dt){
     if(!isBlocked(plr.x,ny)) plr.y=ny;
     plr.x=Math.max(TS*0.55,Math.min(COLS*TS-TS*0.55,plr.x));
     plr.y=Math.max(TS*0.55,Math.min(ROWS*TS-TS*0.55,plr.y));
+    if(isBlocked(plr.x,plr.y)){ forceRecoverPlayer(); }
+    else l3LastSafe={x:plr.x,y:plr.y};
     updateCamera();
 
     // Collect shards
