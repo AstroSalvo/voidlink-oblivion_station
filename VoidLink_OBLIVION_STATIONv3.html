@@ -1950,6 +1950,7 @@ const L2 = (() => {
 const L3 = (() => {
 'use strict';
 let active=false, raf=null, lastTs=0, t=0;
+let l3AmbPulse=0;
 let W=800, H=600;
 let gc=null, gx=null, dc=null, dx=null;
 let mx=400, my=300;
@@ -1992,6 +1993,7 @@ let unlockedGroups=new Set(); // 'A','B','C'
 let plr={x:TS*1.5, y:TS*1.5, angle:0, speed:160};
 const KEYS={};
 let camX=0, camY=0;
+let l3SpawnGuard=0; // short lock to avoid startup input carry-over launches
 
 // ── DATA-SHARDS (collectibles that satisfy Zara's task) ───────────────────────
 let shards=[
@@ -2172,6 +2174,8 @@ function initLevel(){
     MAP=[...RAW];
     Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
     plr={x:TS*1.5,y:TS*1.5,angle:0,speed:160};
+    l3SpawnGuard=0.45;
+    mx=W*0.5; my=H*0.5;
     shardCount=0; exitOpen=false; taskPanel=null;
     npcs.forEach(n=>{n.phase=0;n.taskDone=false;n.met=false;n.talking=false;n.dialogIdx=0;});
     shards.forEach(s=>s.collected=false);
@@ -2188,7 +2192,15 @@ function refreshHUD(){
 function isUIOpen(){ return npcs.some(n=>n.talking) || taskPanel!==null; }
 
 function updatePlayer(dt){
+    if(!Number.isFinite(dt)||dt<=0) return;
     if(!Number.isFinite(plr.x)||!Number.isFinite(plr.y)){ plr.x=TS*1.5; plr.y=TS*1.5; }
+    if(plr.x<TS*0.55||plr.x>COLS*TS-TS*0.55||plr.y<TS*0.55||plr.y>ROWS*TS-TS*0.55){ plr.x=TS*1.5; plr.y=TS*1.5; }
+    if(l3SpawnGuard>0){
+        l3SpawnGuard=Math.max(0,l3SpawnGuard-dt);
+        Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
+        updateCamera();
+        return;
+    }
     if(isUIOpen()) return;
     const spd=plr.speed*dt;
     let dx2=0, dy2=0;
@@ -2880,6 +2892,8 @@ function loop3(ts){
     raf=requestAnimationFrame(loop3);
     const dt=Math.min((ts-lastTs)/1000,0.05);
     lastTs=ts; t+=dt;
+    l3AmbPulse+=dt;
+    if(l3AmbPulse>6){ l3AmbPulse=0; playTone('sine',[{f:82,t:0},{f:96,t:0.4}],{a:0.05,d:0.2,s:0.2,hold:0.45,r:0.5,peak:0.06},true); }
     updatePlayer(dt); tickShield(dt); drawScene();
 }
 
@@ -2903,6 +2917,7 @@ function start(){
         S.hull=100; S.shield=100; updateHUD();
         initLevel(); active=true;
         setLore(L3_STORY.join('<br>'));
+        flashMsg('ARCHIVE_OBLIVION\nParla con gli Echi, completa i task\nOgni task sblocca la stanza successiva');
         playBGM('l3');
         document.getElementById('vf-l3-result').style.display='none';
         document.getElementById('vf-l3-dialog').style.display='none';
