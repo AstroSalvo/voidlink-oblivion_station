@@ -1998,6 +1998,7 @@ let l3SpawnAnchor={x:TS*1.5,y:TS*1.5};
 let l3InputArmed=false;
 let l3StartMs=0;
 let l3LastSafe={x:TS*1.5,y:TS*1.5};
+let l3NeedsNeutral=true;
 
 // ── DATA-SHARDS (collectibles that satisfy Zara's task) ───────────────────────
 let shards=[
@@ -2206,6 +2207,7 @@ function initLevel(){
     l3LastSafe={x:spawn.x,y:spawn.y};
     l3SpawnGuard=1.25;
     l3InputArmed=false;
+    l3NeedsNeutral=true;
     l3StartMs=performance.now();
     mx=W*0.5; my=H*0.5;
     shardCount=0; exitOpen=false; taskPanel=null;
@@ -2222,6 +2224,10 @@ function refreshHUD(){
 
 // ── PLAYER UPDATE ─────────────────────────────────────────────────────────────
 function isUIOpen(){ return npcs.some(n=>n.talking) || taskPanel!==null; }
+function hasMoveInput(){
+    return !!(KEYS['w']||KEYS['W']||KEYS['ArrowUp']||KEYS['s']||KEYS['S']||KEYS['ArrowDown']||KEYS['a']||KEYS['A']||KEYS['ArrowLeft']||KEYS['d']||KEYS['D']||KEYS['ArrowRight']);
+}
+function clearInputs(){ Object.keys(KEYS).forEach(k=>{KEYS[k]=false;}); }
 
 function updatePlayer(dt){
     if(!Number.isFinite(dt)||dt<=0) return;
@@ -2232,12 +2238,16 @@ function updatePlayer(dt){
     if(Math.hypot(plr.x-l3LastSafe.x,plr.y-l3LastSafe.y)>maxStep){ forceRecoverPlayer(); }
     if(l3SpawnGuard>0){
         l3SpawnGuard=Math.max(0,l3SpawnGuard-dt);
-        Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
+        clearInputs();
         plr.x=l3SpawnAnchor.x;
         plr.y=l3SpawnAnchor.y;
         l3LastSafe={x:l3SpawnAnchor.x,y:l3SpawnAnchor.y};
         updateCamera();
         return;
+    }
+    if(l3NeedsNeutral){
+        if(hasMoveInput()){ clearInputs(); return; }
+        l3NeedsNeutral=false;
     }
     if(isUIOpen()) return;
     const spd=plr.speed*dt;
@@ -2923,7 +2933,7 @@ function drawScene(){
 // ── INPUT ─────────────────────────────────────────────────────────────────────
 function onK3(e){
     if(!active) return;
-    if(e.type==='keydown' && !l3InputArmed && (performance.now()-l3StartMs)>300){
+    if(e.type==='keydown' && !l3InputArmed && !l3NeedsNeutral && l3SpawnGuard<=0 && (performance.now()-l3StartMs)>300){
         l3InputArmed=true;
     }
     KEYS[e.key]=(e.type==='keydown');
@@ -2931,6 +2941,7 @@ function onK3(e){
     if(e.type==='keydown' && e.key==='Escape') { closeTask(); closeDlg(); }
 }
 function onM3(e){ if(!active) return; const r=gc.getBoundingClientRect(); mx=e.clientX-r.left; my=e.clientY-r.top; }
+function onL3Blur(){ clearInputs(); }
 
 // ── LOOP ──────────────────────────────────────────────────────────────────────
 function loop3(ts){
@@ -2968,6 +2979,7 @@ function start(){
         document.getElementById('vf-l3-result').style.display='none';
         document.getElementById('vf-l3-dialog').style.display='none';
         window.addEventListener('keydown',onK3); window.addEventListener('keyup',onK3);
+        window.addEventListener('blur',onL3Blur);
         gc.addEventListener('mousemove',onM3);
         lastTs=performance.now(); raf=requestAnimationFrame(loop3);
     };
@@ -2975,8 +2987,9 @@ function start(){
 }
 function stop(){
     active=false; if(raf){cancelAnimationFrame(raf);raf=null;}
-    Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
+    clearInputs();
     window.removeEventListener('keydown',onK3); window.removeEventListener('keyup',onK3);
+    window.removeEventListener('blur',onL3Blur);
     const ov=document.getElementById('vf-l3-task-overlay'); if(ov) ov.remove();
 }
 return{start,stop};
