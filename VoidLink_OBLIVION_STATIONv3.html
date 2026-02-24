@@ -763,10 +763,6 @@ body{background:var(--void);color:var(--beige);height:100vh;overflow:hidden;disp
         <div id="vf-l3-ability" style="position:absolute;top:12px;right:14px;font-size:7px;letter-spacing:2px;color:rgba(191,95,255,0.6);pointer-events:none;text-align:right;z-index:2;">
           [G] GHOST_REWRITE<br><span id="vf-l3-ghost-status">PRONTO</span>
         </div>
-        <div id="vf-l3-lore" style="position:absolute;left:14px;bottom:14px;max-width:420px;background:rgba(0,0,0,0.62);border:1px solid rgba(0,255,65,0.14);padding:10px 12px;font-size:7px;letter-spacing:1px;line-height:1.7;color:rgba(227,218,201,0.68);z-index:2;pointer-events:none;">
-          <div style="color:rgba(0,255,65,0.55);letter-spacing:3px;font-size:6px;margin-bottom:4px;">LORE // ARCHIVE_OBLIVION</div>
-          Recupera la memoria dell'equipaggio: ogni task completa un nodo storia e sblocca nuove aree della stazione.
-        </div>
         <!-- Floating dialog — Among-Us style -->
         <div id="vf-l3-dialog">
           <div class="dlg-inner">
@@ -838,32 +834,22 @@ body{background:var(--void);color:var(--beige);height:100vh;overflow:hidden;disp
 // ═══════════════════════════════════════════════════════════════
 //  AUDIO ENGINE
 // ═══════════════════════════════════════════════════════════════
-let AC = null;
-try {
-    const ACtx = window.AudioContext || window.webkitAudioContext;
-    if (ACtx) AC = new ACtx();
-} catch(_) { AC = null; }
-const masterGain = AC ? AC.createGain() : null;
-if(masterGain){
-    masterGain.gain.value = 0.55;
-    masterGain.connect(AC.destination);
-}
-let audioEnabled = !!AC;
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = AC.createGain();
+masterGain.gain.value = 0.55;
+masterGain.connect(AC.destination);
+let audioEnabled = true;
 function toggleAudio() {
-    if(!AC || !masterGain){
-        audioEnabled = false;
-        return;
-    }
     audioEnabled = !audioEnabled;
     masterGain.gain.setTargetAtTime(audioEnabled ? 0.55 : 0, AC.currentTime, 0.05);
     const label = audioEnabled ? '&#9654; AUDIO ON' : '&#9646;&#9646; AUDIO OFF';
     ['audio-toggle','audio-toggle-menu'].forEach(id => { const b = document.getElementById(id); if(b){b.innerHTML=label;} });
 }
-function makeReverb(d=1.2,dec=2.5){if(!AC) return null;const l=AC.sampleRate*d,b=AC.createBuffer(2,l,AC.sampleRate);for(let c=0;c<2;c++){const dd=b.getChannelData(c);for(let i=0;i<l;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/l,dec);}const cv=AC.createConvolver();cv.buffer=b;return cv;}
-const reverb=makeReverb();const rvGain=AC?AC.createGain():null;if(reverb&&rvGain&&masterGain){rvGain.gain.value=0.18;reverb.connect(rvGain);rvGain.connect(masterGain);}
-function resume(){if(AC&&AC.state==='suspended')AC.resume();}
-function playTone(type,freqs,adsr,rev=false){if(!AC||!masterGain||!audioEnabled)return;resume();const now=AC.currentTime,osc=AC.createOscillator(),g=AC.createGain();osc.type=type;osc.frequency.setValueAtTime(freqs[0].f,now);freqs.forEach(fp=>osc.frequency.linearRampToValueAtTime(fp.f,now+fp.t));const pk=adsr.peak||1;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(pk,now+(adsr.a||0.01));g.gain.linearRampToValueAtTime((adsr.s||0.3)*pk,now+(adsr.a||0.01)+(adsr.d||0.05));const rs=adsr.hold||0.05;g.gain.setValueAtTime((adsr.s||0.3)*pk,now+rs);g.gain.linearRampToValueAtTime(0,now+rs+(adsr.r||0.1));osc.connect(g);g.connect(masterGain);if(rev&&reverb)g.connect(reverb);osc.start(now);osc.stop(now+rs+(adsr.r||0.1)+0.05);}
-function playNoise(dur,gp,ff,ft='bandpass'){if(!AC||!masterGain||!audioEnabled)return;resume();const buf=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const src=AC.createBufferSource();src.buffer=buf;const filt=AC.createBiquadFilter();filt.type=ft;filt.frequency.value=ff;filt.Q.value=3;const g=AC.createGain();const now=AC.currentTime;g.gain.setValueAtTime(gp,now);g.gain.linearRampToValueAtTime(0,now+dur);src.connect(filt);filt.connect(g);g.connect(masterGain);src.start(now);src.stop(now+dur+0.01);}
+function makeReverb(d=1.2,dec=2.5){const l=AC.sampleRate*d,b=AC.createBuffer(2,l,AC.sampleRate);for(let c=0;c<2;c++){const dd=b.getChannelData(c);for(let i=0;i<l;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/l,dec);}const cv=AC.createConvolver();cv.buffer=b;return cv;}
+const reverb=makeReverb();const rvGain=AC.createGain();rvGain.gain.value=0.18;reverb.connect(rvGain);rvGain.connect(masterGain);
+function resume(){if(AC.state==='suspended')AC.resume();}
+function playTone(type,freqs,adsr,rev=false){resume();const now=AC.currentTime,osc=AC.createOscillator(),g=AC.createGain();osc.type=type;osc.frequency.setValueAtTime(freqs[0].f,now);freqs.forEach(fp=>osc.frequency.linearRampToValueAtTime(fp.f,now+fp.t));const pk=adsr.peak||1;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(pk,now+(adsr.a||0.01));g.gain.linearRampToValueAtTime((adsr.s||0.3)*pk,now+(adsr.a||0.01)+(adsr.d||0.05));const rs=adsr.hold||0.05;g.gain.setValueAtTime((adsr.s||0.3)*pk,now+rs);g.gain.linearRampToValueAtTime(0,now+rs+(adsr.r||0.1));osc.connect(g);g.connect(masterGain);if(rev)g.connect(reverb);osc.start(now);osc.stop(now+rs+(adsr.r||0.1)+0.05);}
+function playNoise(dur,gp,ff,ft='bandpass'){resume();const buf=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const src=AC.createBufferSource();src.buffer=buf;const filt=AC.createBiquadFilter();filt.type=ft;filt.frequency.value=ff;filt.Q.value=3;const g=AC.createGain();const now=AC.currentTime;g.gain.setValueAtTime(gp,now);g.gain.linearRampToValueAtTime(0,now+dur);src.connect(filt);filt.connect(g);g.connect(masterGain);src.start(now);src.stop(now+dur+0.01);}
 function sfxKeyPress(){playTone('square',[{f:1200,t:0},{f:900,t:0.03}],{a:0.002,d:0.01,s:0,hold:0.01,r:0.03,peak:0.28});}
 function sfxCodeCorrect(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone('sine',[{f,t:0},{f:f*1.01,t:0.12}],{a:0.008,d:0.04,s:0.5,hold:0.1,r:0.18,peak:0.55},true),i*38));}
 function sfxWrong(){playTone('sawtooth',[{f:180,t:0},{f:80,t:0.12}],{a:0.005,d:0.04,s:0.2,hold:0.08,r:0.08,peak:0.45});playNoise(0.1,0.3,400);}
@@ -874,7 +860,7 @@ function sfxBossFail(){playTone('sawtooth',[{f:220,t:0},{f:40,t:0.8}],{a:0.01,d:
 function sfxRingLock(i){const f=600+i*180;playTone('triangle',[{f,t:0},{f:f*0.7,t:0.08}],{a:0.003,d:0.03,s:0.1,hold:0.05,r:0.12,peak:0.6});playNoise(0.06,0.4,f*1.5);}
 function sfxAllRingsLocked(){[800,1000,1200,1600].forEach((f,i)=>setTimeout(()=>playTone('sine',[{f,t:0},{f:f*1.02,t:0.3}],{a:0.005,d:0.05,s:0.5,hold:0.25,r:0.35,peak:0.55},true),i*30));}
 let sHN=null,sHG=null;
-function sfxSurgeStart(){if(!AC||!masterGain||!audioEnabled)return;resume();sHN=AC.createOscillator();sHG=AC.createGain();const lfo=AC.createOscillator(),lg=AC.createGain();sHN.type='sawtooth';sHN.frequency.setValueAtTime(110,AC.currentTime);lfo.type='sine';lfo.frequency.value=6;lg.gain.value=20;lfo.connect(lg);lg.connect(sHN.frequency);sHG.gain.setValueAtTime(0,AC.currentTime);sHG.gain.linearRampToValueAtTime(0.35,AC.currentTime+0.15);sHN.connect(sHG);sHG.connect(masterGain);sHN.start();lfo.start();sHN._lfo=lfo;}
+function sfxSurgeStart(){resume();sHN=AC.createOscillator();sHG=AC.createGain();const lfo=AC.createOscillator(),lg=AC.createGain();sHN.type='sawtooth';sHN.frequency.setValueAtTime(110,AC.currentTime);lfo.type='sine';lfo.frequency.value=6;lg.gain.value=20;lfo.connect(lg);lg.connect(sHN.frequency);sHG.gain.setValueAtTime(0,AC.currentTime);sHG.gain.linearRampToValueAtTime(0.35,AC.currentTime+0.15);sHN.connect(sHG);sHG.connect(masterGain);sHN.start();lfo.start();sHN._lfo=lfo;}
 function sfxSurgeStop(){if(!sHN)return;sHG.gain.linearRampToValueAtTime(0,AC.currentTime+0.1);sHN.stop(AC.currentTime+0.12);if(sHN._lfo)sHN._lfo.stop(AC.currentTime+0.12);sHN=null;sHG=null;}
 function sfxSurgeHit(){playTone('sine',[{f:1200,t:0},{f:1600,t:0.05},{f:900,t:0.4}],{a:0.005,d:0.04,s:0.4,hold:0.3,r:0.35,peak:0.65},true);}
 function sfxNexusNode(s){const f=440+s*80;playTone('sine',[{f,t:0},{f:f*1.3,t:0.05},{f,t:0.12}],{a:0.004,d:0.03,s:0.2,hold:0.08,r:0.12,peak:0.55});}
@@ -882,35 +868,6 @@ function sfxNexusWrong(){playTone('square',[{f:200,t:0},{f:60,t:0.25}],{a:0.005,
 function sfxNexusComplete(){[330,440,550,660,880,1100].forEach((f,i)=>setTimeout(()=>playTone('triangle',[{f,t:0},{f:f*1.5,t:0.2}],{a:0.005,d:0.04,s:0.3,hold:0.15,r:0.25,peak:0.5},true),i*45));}
 function sfxObjectiveUnlocked(){[523,784,1047,1568].forEach((f,i)=>setTimeout(()=>playTone('sine',[{f,t:0},{f:f*1.01,t:0.2}],{a:0.008,d:0.05,s:0.5,hold:0.15,r:0.3,peak:0.5},true),i*60));setTimeout(()=>playNoise(0.15,0.35,3000,'highpass'),200);}
 function sfxGameOver(){playTone('sawtooth',[{f:300,t:0},{f:200,t:0.2},{f:80,t:1.2}],{a:0.01,d:0.15,s:0.6,hold:0.8,r:0.8,peak:0.9},true);playNoise(0.4,0.7,150,'lowpass');setTimeout(()=>playTone('sine',[{f:120,t:0},{f:40,t:1.0}],{a:0.02,d:0.1,s:0.4,hold:0.6,r:1.0,peak:0.45},true),300);}
-
-let bgm={nodes:[],mode:''};
-function stopBGM(){
-    if(!AC) return;
-    if(!bgm.nodes.length) return;
-    const now=AC.currentTime;
-    bgm.nodes.forEach(n=>{try{if(n.gain)n.gain.gain.linearRampToValueAtTime(0,now+0.35);}catch(e){};try{n.osc&&n.osc.stop(now+0.4);}catch(e){};});
-    bgm={nodes:[],mode:''};
-}
-function playBGM(mode='menu'){
-    if(!AC || !masterGain || !audioEnabled) return;
-    if(bgm.mode===mode) return;
-    stopBGM(); resume();
-    const now=AC.currentTime;
-    const mk=(type,f,vol,det=0)=>{const osc=AC.createOscillator(),gain=AC.createGain();osc.type=type;osc.frequency.value=f;osc.detune.value=det;gain.gain.value=0;osc.connect(gain);gain.connect(masterGain);osc.start();gain.gain.linearRampToValueAtTime(vol,now+0.8);bgm.nodes.push({osc,gain});return{osc,gain};};
-    if(mode==='l3'){
-        mk('triangle',55,0.05);
-        mk('sine',82.4,0.03,3);
-        mk('sawtooth',110,0.018,-6);
-    }else if(mode==='l4'){
-        mk('sawtooth',46,0.055);
-        mk('square',92,0.02,4);
-        mk('triangle',138,0.015,-4);
-    }else{
-        mk('sine',73.4,0.03);
-        mk('triangle',146.8,0.018);
-    }
-    bgm.mode=mode;
-}
 
 // ═══════════════════════════════════════════════════════════════
 //  ORIGINAL VOIDLINK CORE
@@ -1303,7 +1260,6 @@ function open_(){
     if(S.pilotName){
         document.getElementById('vf-sbar-name').innerText = S.pilotName;
         renderMenu();
-        playBGM('menu');
         showScreen('vf-scr-menu');
     } else {
         showScreen('vf-scr-login');
@@ -1312,14 +1268,12 @@ function open_(){
 
 function close_(){
     document.getElementById('vf-overlay').classList.remove('open');
-    stopBGM();
     L1.stop(); L2.stop(); L3.stop(); L4.stop();
     if(footerTimer){ clearInterval(footerTimer); footerTimer = null; }
 }
 
 function goMenu(){
     L1.stop(); L2.stop(); L3.stop(); L4.stop();
-    playBGM('menu');
     S.hull = 100; S.shield = 100;
     updateHUD();
     renderMenu();
@@ -1336,7 +1290,6 @@ function initPilot(){
     writeSave(save);
     document.getElementById('vf-sbar-name').innerText = val;
     renderMenu();
-    playBGM('menu');
     showScreen('vf-scr-menu');
 }
 
@@ -1950,7 +1903,6 @@ const L2 = (() => {
 const L3 = (() => {
 'use strict';
 let active=false, raf=null, lastTs=0, t=0;
-let l3AmbPulse=0;
 let W=800, H=600;
 let gc=null, gx=null, dc=null, dx=null;
 let mx=400, my=300;
@@ -1958,7 +1910,6 @@ let mx=400, my=300;
 // ── MAP ──────────────────────────────────────────────────────────────────────
 // 0=floor 1=wall 2=locked-door
 const TS=72, COLS=22, ROWS=14;
-const L3_ZOOM=1.62; // camera zoom focused on player
 //prettier-ignore
 const RAW=[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -1993,12 +1944,6 @@ let unlockedGroups=new Set(); // 'A','B','C'
 let plr={x:TS*1.5, y:TS*1.5, angle:0, speed:160};
 const KEYS={};
 let camX=0, camY=0;
-let l3SpawnGuard=0; // short lock to avoid startup input carry-over launches
-let l3SpawnAnchor={x:TS*1.5,y:TS*1.5};
-let l3InputArmed=false;
-let l3StartMs=0;
-let l3LastSafe={x:TS*1.5,y:TS*1.5};
-let l3NeedsNeutral=true;
 
 // ── DATA-SHARDS (collectibles that satisfy Zara's task) ───────────────────────
 let shards=[
@@ -2017,14 +1962,6 @@ let exitOpen=false;
 // ── INTERACTIVE TASK SYSTEM ───────────────────────────────────────────────────
 // taskPanel: the currently open mini-game panel (null = none)
 let taskPanel=null;
-
-const L3_STORY=[
-    'OBLIVION_STATION era un laboratorio di coscienze sintetiche.',
-    'L\'Architetto ha frammentato l\'equipaggio in Echi digitali.',
-    'Parla con gli NPC: ogni task ricompone memoria e apre nuove sezioni.',
-    'Solo riallineando tutti gli Echi puoi aprire il corridoio del Neural Core.'
-];
-function setLore(text){ const box=document.getElementById('vf-l3-lore'); if(box) box.innerHTML=`<div style="color:rgba(0,255,65,0.55);letter-spacing:3px;font-size:6px;margin-bottom:4px;">LORE // ARCHIVE_OBLIVION</div>${text}`; }
 
 // ── NPC DEFINITIONS ──────────────────────────────────────────────────────────
 // Each NPC has: position, multi-phase dialogue, a task to assign, and a reward
@@ -2059,7 +1996,6 @@ let npcs=[
                     'Codice trasmesso. Il settore B è ora accessibile.',
                     'Trova KB-7 nell\'ala est. Era il nostro sistema di supporto vitale. Ora è... cambiato.',
                     'Porta con te almeno 3 Data-Shard. Servono come chiavi di autenticazione per KB-7.',
-                    'Ogni settore è collegato: task completato = nuova stanza utile alla successiva.',
                 ],
             },
         },
@@ -2094,7 +2030,6 @@ let npcs=[
                     'IL SETTORE C È ORA ACCESSIBILE.',
                     'ECHO GAMMA SI TROVA NELL\'ALA NORD-EST. ATTENZIONE: È INSTABILE.',
                     'RICHIEDE UN TEST DI PATTERN COGNITIVO PRIMA DI FIDARSI. BUONA FORTUNA.',
-                    'Senza il task di Gamma il corridoio finale resta sigillato.',
                 ],
             },
         },
@@ -2158,26 +2093,6 @@ function isBlocked(px2,py2){
     }
     return false;
 }
-function findSafePointNear(px2,py2,maxRadius=6){
-    const baseC=Math.floor(px2/TS), baseR=Math.floor(py2/TS);
-    const centerX=(baseC+0.5)*TS, centerY=(baseR+0.5)*TS;
-    if(!isBlocked(centerX,centerY)) return {x:centerX,y:centerY};
-    for(let r=1;r<=maxRadius;r++){
-        for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
-            if(Math.abs(dx)!==r && Math.abs(dy)!==r) continue;
-            const c=baseC+dx, rr=baseR+dy;
-            const x=(c+0.5)*TS, y=(rr+0.5)*TS;
-            if(c<0||rr<0||c>=COLS||rr>=ROWS) continue;
-            if(!isBlocked(x,y)) return {x,y};
-        }
-    }
-    return {x:TS*1.5,y:TS*1.5};
-}
-function forceRecoverPlayer(){
-    const safe=findSafePointNear(plr.x,plr.y,8);
-    plr.x=safe.x; plr.y=safe.y;
-    l3LastSafe={x:safe.x,y:safe.y};
-}
 function unlockGroup(gk){
     if(unlockedGroups.has(gk)) return;
     unlockedGroups.add(gk);
@@ -2189,27 +2104,14 @@ function unlockGroup(gk){
 
 // ── CAMERA ────────────────────────────────────────────────────────────────────
 function updateCamera(){
-    const safeW=Math.max(1,Number.isFinite(W)?W:800), safeH=Math.max(1,Number.isFinite(H)?H:600);
-    const viewW=safeW/L3_ZOOM, viewH=safeH/L3_ZOOM;
-    camX=Math.max(0,Math.min(COLS*TS-viewW,plr.x-viewW/2));
-    camY=Math.max(0,Math.min(ROWS*TS-viewH,plr.y-viewH/2));
-    if(!Number.isFinite(camX)) camX=0;
-    if(!Number.isFinite(camY)) camY=0;
+    camX=Math.max(0,Math.min(COLS*TS-W,plr.x-W/2));
+    camY=Math.max(0,Math.min(ROWS*TS-H,plr.y-H/2));
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function initLevel(){
     MAP=[...RAW];
-    Object.keys(KEYS).forEach(k=>{KEYS[k]=false;});
-    const spawn=findSafePointNear(TS*1.5,TS*1.5,8);
-    plr={x:spawn.x,y:spawn.y,angle:0,speed:160};
-    l3SpawnAnchor={x:spawn.x,y:spawn.y};
-    l3LastSafe={x:spawn.x,y:spawn.y};
-    l3SpawnGuard=1.25;
-    l3InputArmed=false;
-    l3NeedsNeutral=true;
-    l3StartMs=performance.now();
-    mx=W*0.5; my=H*0.5;
+    plr={x:TS*1.5,y:TS*1.5,angle:0,speed:160};
     shardCount=0; exitOpen=false; taskPanel=null;
     npcs.forEach(n=>{n.phase=0;n.taskDone=false;n.met=false;n.talking=false;n.dialogIdx=0;});
     shards.forEach(s=>s.collected=false);
@@ -2224,49 +2126,21 @@ function refreshHUD(){
 
 // ── PLAYER UPDATE ─────────────────────────────────────────────────────────────
 function isUIOpen(){ return npcs.some(n=>n.talking) || taskPanel!==null; }
-function hasMoveInput(){
-    return !!(KEYS['w']||KEYS['W']||KEYS['ArrowUp']||KEYS['s']||KEYS['S']||KEYS['ArrowDown']||KEYS['a']||KEYS['A']||KEYS['ArrowLeft']||KEYS['d']||KEYS['D']||KEYS['ArrowRight']);
-}
-function clearInputs(){ Object.keys(KEYS).forEach(k=>{KEYS[k]=false;}); }
 
 function updatePlayer(dt){
-    if(!Number.isFinite(dt)||dt<=0) return;
-    if(!Number.isFinite(plr.x)||!Number.isFinite(plr.y)){ forceRecoverPlayer(); }
-    if(plr.x<TS*0.55||plr.x>COLS*TS-TS*0.55||plr.y<TS*0.55||plr.y>ROWS*TS-TS*0.55){ forceRecoverPlayer(); }
-    if(isBlocked(plr.x,plr.y)){ forceRecoverPlayer(); }
-    const maxStep=(plr.speed*Math.max(dt,0.016))*3.2;
-    if(Math.hypot(plr.x-l3LastSafe.x,plr.y-l3LastSafe.y)>maxStep){ forceRecoverPlayer(); }
-    if(l3SpawnGuard>0){
-        l3SpawnGuard=Math.max(0,l3SpawnGuard-dt);
-        clearInputs();
-        plr.x=l3SpawnAnchor.x;
-        plr.y=l3SpawnAnchor.y;
-        l3LastSafe={x:l3SpawnAnchor.x,y:l3SpawnAnchor.y};
-        updateCamera();
-        return;
-    }
-    if(l3NeedsNeutral){
-        if(hasMoveInput()){ clearInputs(); return; }
-        l3NeedsNeutral=false;
-    }
     if(isUIOpen()) return;
     const spd=plr.speed*dt;
     let dx2=0, dy2=0;
-    if(l3InputArmed){
-        if(KEYS['w']||KEYS['W']||KEYS['ArrowUp'])    dy2-=spd;
-        if(KEYS['s']||KEYS['S']||KEYS['ArrowDown'])  dy2+=spd;
-        if(KEYS['a']||KEYS['A']||KEYS['ArrowLeft'])  dx2-=spd;
-        if(KEYS['d']||KEYS['D']||KEYS['ArrowRight']) dx2+=spd;
-    }
-    const psx=(plr.x-camX)*L3_ZOOM, psy=(plr.y-camY)*L3_ZOOM;
-    plr.angle=Math.atan2(my-psy, mx-psx);
+    if(KEYS['w']||KEYS['W']||KEYS['ArrowUp'])    dy2-=spd;
+    if(KEYS['s']||KEYS['S']||KEYS['ArrowDown'])  dy2+=spd;
+    if(KEYS['a']||KEYS['A']||KEYS['ArrowLeft'])  dx2-=spd;
+    if(KEYS['d']||KEYS['D']||KEYS['ArrowRight']) dx2+=spd;
+    plr.angle=Math.atan2(my-(plr.y-camY), mx-(plr.x-camX));
     const nx=plr.x+dx2, ny=plr.y+dy2;
     if(!isBlocked(nx,plr.y)) plr.x=nx;
     if(!isBlocked(plr.x,ny)) plr.y=ny;
     plr.x=Math.max(TS*0.55,Math.min(COLS*TS-TS*0.55,plr.x));
     plr.y=Math.max(TS*0.55,Math.min(ROWS*TS-TS*0.55,plr.y));
-    if(isBlocked(plr.x,plr.y)){ forceRecoverPlayer(); }
-    else l3LastSafe={x:plr.x,y:plr.y};
     updateCamera();
 
     // Collect shards
@@ -2305,7 +2179,6 @@ function tryInteract(){
 // ── NPC DIALOGUE SYSTEM ───────────────────────────────────────────────────────
 function openNPC(n){
     n.met=true; n.talking=true;
-    playTone('triangle',[{f:220,t:0},{f:330,t:0.2}],{a:0.02,d:0.1,s:0.25,hold:0.15,r:0.25,peak:0.08},true);
     const dlgSet=n.dialogues[n.phase];
     n.dialogIdx=0;
     showDlgLine(n, dlgSet);
@@ -2387,9 +2260,9 @@ function onTaskComplete(npcId){
     gainSync(15); sfxCodeCorrect();
 
     // Unlock reward
-    if(npcId==='alpha') { unlockGroup('A'); setLore('Zara ha confermato la tua identità. Settore B aperto: ora puoi raggiungere KB-7 e capire come è collassato il supporto vitale.'); }
-    else if(npcId==='beta') { unlockGroup('B'); setLore('KB-7 ripristina i circuiti e rivela la verità: l\'Architetto ha isolato i ricordi umani. Settore C sbloccato.'); }
-    else if(npcId==='gamma') { unlockGroup('C'); setLore('Echo Gamma ricompone il frammento finale della storia. Il corridoio verso il Neural Core ora è aperto.'); }
+    if(npcId==='alpha') unlockGroup('A');
+    else if(npcId==='beta') unlockGroup('B');
+    else if(npcId==='gamma') unlockGroup('C');
 
     // Update task tracker
     taskState.echoA=npcs[0].met?1:0;
@@ -2775,7 +2648,6 @@ function endL3(){
 function drawScene(){
     gx.clearRect(0,0,W,H);
     gx.save();
-    gx.scale(L3_ZOOM,L3_ZOOM);
     gx.translate(-camX,-camY);
 
     // Tiles
@@ -2881,26 +2753,26 @@ function drawScene(){
     gx.restore(); // pop camera
 
     // ── DARK OVERLAY + FLASHLIGHT ──────────────────────────────────────────────
-    const psx=(plr.x-camX)*L3_ZOOM, psy=(plr.y-camY)*L3_ZOOM;
+    const psx=plr.x-camX, psy=plr.y-camY;
     dx.clearRect(0,0,W,H);
-    dx.fillStyle='rgba(0,0,0,0.965)'; dx.fillRect(0,0,W,H);
+    dx.fillStyle='rgba(0,0,0,0.88)'; dx.fillRect(0,0,W,H);
     dx.save(); dx.globalCompositeOperation='destination-out';
     const fa=Math.atan2(my-psy, mx-psx);
-    const fgrad=dx.createRadialGradient(psx,psy,0,psx,psy,150);
+    const fgrad=dx.createRadialGradient(psx,psy,0,psx,psy,230);
     fgrad.addColorStop(0,'rgba(0,0,0,1)');
-    fgrad.addColorStop(0.45,'rgba(0,0,0,0.72)');
+    fgrad.addColorStop(0.5,'rgba(0,0,0,0.8)');
     fgrad.addColorStop(1,'rgba(0,0,0,0)');
     dx.fillStyle=fgrad;
-    dx.beginPath(); dx.moveTo(psx,psy); dx.arc(psx,psy,150,fa-0.38,fa+0.38); dx.closePath(); dx.fill();
-    // Ambient glow close to the pawn
-    const ambg=dx.createRadialGradient(psx,psy,0,psx,psy,55);
-    ambg.addColorStop(0,'rgba(0,0,0,0.45)'); ambg.addColorStop(1,'rgba(0,0,0,0)');
-    dx.fillStyle=ambg; dx.beginPath(); dx.arc(psx,psy,55,0,Math.PI*2); dx.fill();
+    dx.beginPath(); dx.moveTo(psx,psy); dx.arc(psx,psy,230,fa-0.55,fa+0.55); dx.closePath(); dx.fill();
+    // Ambient
+    const ambg=dx.createRadialGradient(psx,psy,0,psx,psy,45);
+    ambg.addColorStop(0,'rgba(0,0,0,0.55)'); ambg.addColorStop(1,'rgba(0,0,0,0)');
+    dx.fillStyle=ambg; dx.beginPath(); dx.arc(psx,psy,45,0,Math.PI*2); dx.fill();
     dx.restore();
 
     // ── MINIMAP ───────────────────────────────────────────────────────────────
-    const mW=120,mH=74,mX=W-mW-10,mY=10,cw=mW/COLS,rh2=mH/ROWS;
-    dx.fillStyle='rgba(0,0,0,0.82)'; dx.fillRect(mX,mY,mW,mH);
+    const mW=96,mH=60,mX=W-mW-10,mY=10,cw=mW/COLS,rh2=mH/ROWS;
+    dx.fillStyle='rgba(0,0,0,0.75)'; dx.fillRect(mX,mY,mW,mH);
     dx.strokeStyle='rgba(0,255,65,0.14)'; dx.lineWidth=1; dx.strokeRect(mX,mY,mW,mH);
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
         if(tileAt(c,r)===1){ dx.fillStyle='rgba(0,255,65,0.14)'; dx.fillRect(mX+c*cw,mY+r*rh2,cw,rh2); }
@@ -2912,14 +2784,7 @@ function drawScene(){
     }
     npcs.forEach(n=>{ dx.fillStyle=n.color; dx.beginPath(); dx.arc(mX+n.cx*cw,mY+n.cy*rh2,2.5,0,Math.PI*2); dx.fill(); });
     if(exitOpen){ dx.fillStyle='rgba(191,95,255,0.8)'; dx.beginPath(); dx.arc(mX+EXIT.cx*cw,mY+EXIT.cy*rh2,3,0,Math.PI*2); dx.fill(); }
-    const pMiniX=mX+(plr.x/TS)*cw, pMiniY=mY+(plr.y/TS)*rh2;
-    dx.fillStyle='#00FF41'; dx.beginPath(); dx.arc(pMiniX,pMiniY,3,0,Math.PI*2); dx.fill();
-    dx.strokeStyle='rgba(0,255,65,0.55)'; dx.lineWidth=1;
-    dx.beginPath(); dx.moveTo(pMiniX,pMiniY);
-    dx.lineTo(pMiniX+Math.cos(plr.angle)*8,pMiniY+Math.sin(plr.angle)*8);
-    dx.stroke();
-    dx.fillStyle='rgba(0,255,65,0.4)'; dx.font='6px monospace'; dx.textAlign='left';
-    dx.fillText('MINIMAPPA // TASK-LINK',mX+4,mY-2);
+    dx.fillStyle='#00FF41'; dx.beginPath(); dx.arc(mX+(plr.x/TS)*cw,mY+(plr.y/TS)*rh2,3,0,Math.PI*2); dx.fill();
 
     // HUD: shard/task status (corner)
     dx.fillStyle='rgba(0,0,0,0.6)'; dx.fillRect(10,10,170,56);
@@ -2927,21 +2792,17 @@ function drawScene(){
     dx.fillStyle='rgba(0,255,65,0.35)'; dx.font='7px monospace'; dx.textAlign='left';
     dx.fillText(`SHARD: ${shardCount}/5  ECHI: ${npcs.filter(n=>n.met).length}/3`,18,26);
     dx.fillText(`TASK: ${npcs.filter(n=>n.taskDone).length}/3  ${exitOpen?'EXIT: APERTO':'EXIT: CHIUSO'}`,18,42);
-    dx.fillText(`[E] parla/task  WASD muovi  ogni task sblocca aree`,18,56);
+    dx.fillText(`[E] interagisci  WASD muovi`,18,56);
 }
 
 // ── INPUT ─────────────────────────────────────────────────────────────────────
 function onK3(e){
     if(!active) return;
-    if(e.type==='keydown' && !l3InputArmed && !l3NeedsNeutral && l3SpawnGuard<=0 && (performance.now()-l3StartMs)>300){
-        l3InputArmed=true;
-    }
     KEYS[e.key]=(e.type==='keydown');
     if(e.type==='keydown' && (e.key==='e'||e.key==='E')) tryInteract();
     if(e.type==='keydown' && e.key==='Escape') { closeTask(); closeDlg(); }
 }
 function onM3(e){ if(!active) return; const r=gc.getBoundingClientRect(); mx=e.clientX-r.left; my=e.clientY-r.top; }
-function onL3Blur(){ clearInputs(); }
 
 // ── LOOP ──────────────────────────────────────────────────────────────────────
 function loop3(ts){
@@ -2949,8 +2810,6 @@ function loop3(ts){
     raf=requestAnimationFrame(loop3);
     const dt=Math.min((ts-lastTs)/1000,0.05);
     lastTs=ts; t+=dt;
-    l3AmbPulse+=dt;
-    if(l3AmbPulse>6){ l3AmbPulse=0; playTone('sine',[{f:82,t:0},{f:96,t:0.4}],{a:0.05,d:0.2,s:0.2,hold:0.45,r:0.5,peak:0.06},true); }
     updatePlayer(dt); tickShield(dt); drawScene();
 }
 
@@ -2973,13 +2832,9 @@ function start(){
         gx.fillStyle='#060b06'; gx.fillRect(0,0,W,H);
         S.hull=100; S.shield=100; updateHUD();
         initLevel(); active=true;
-        setLore(L3_STORY.join('<br>'));
-        flashMsg('ARCHIVE_OBLIVION\nParla con gli Echi, completa i task\nOgni task sblocca la stanza successiva');
-        playBGM('l3');
         document.getElementById('vf-l3-result').style.display='none';
         document.getElementById('vf-l3-dialog').style.display='none';
         window.addEventListener('keydown',onK3); window.addEventListener('keyup',onK3);
-        window.addEventListener('blur',onL3Blur);
         gc.addEventListener('mousemove',onM3);
         lastTs=performance.now(); raf=requestAnimationFrame(loop3);
     };
@@ -2987,9 +2842,7 @@ function start(){
 }
 function stop(){
     active=false; if(raf){cancelAnimationFrame(raf);raf=null;}
-    clearInputs();
     window.removeEventListener('keydown',onK3); window.removeEventListener('keyup',onK3);
-    window.removeEventListener('blur',onL3Blur);
     const ov=document.getElementById('vf-l3-task-overlay'); if(ov) ov.remove();
 }
 return{start,stop};
@@ -3252,7 +3105,6 @@ const L4=(()=>{
     function spawnP(x,y,c,n){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*80,vy:(Math.random()-.5)*80,r:2,life:1,decay:.05,c});}
 
     function start(){
-        playBGM('l4');
         showScreen('vf-scr-l4');
         const init=()=>{
             const sb=document.getElementById('vf-sidebar');
